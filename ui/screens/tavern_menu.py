@@ -1,5 +1,5 @@
 # ui/screens/tavern_menu.py
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QListWidget, QListWidgetItem, QProgressBar
 from PySide6.QtCore import Qt, Signal
 from ui.theme import ThemeManager
 from ui.audio import UIAudio

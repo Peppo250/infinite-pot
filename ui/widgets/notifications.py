@@ -59,7 +59,7 @@ class NotificationWidget(QWidget):
 class NotificationManager(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setAttribute(Qt.WA_TransparentBackground)
+        self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_NoSystemBackground)
         
         self.layout = QVBoxLayout(self)

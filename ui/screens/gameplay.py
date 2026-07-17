@@ -122,7 +122,6 @@ class GameplayScreen(QWidget):
         self.obj_content.setStyleSheet("line-height: 1.4;")
         obj_layout.addWidget(self.obj_content)
         
-        main_layout.addWidget(self.obj_content, stretch=2)
         main_layout.addWidget(self.obj_card, stretch=2)
         
         # Initialize
