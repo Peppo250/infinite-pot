@@ -8,6 +8,8 @@ class GameplayScreen(QWidget):
     manage_business = Signal()
     personal_life = Signal()
     restaurant_opened = Signal(int)  # Emits selected work hours
+    go_to_tavern = Signal()
+    sleep_clicked = Signal()
     
     def __init__(self, state, parent=None):
         super().__init__(parent)
@@ -44,7 +46,7 @@ class GameplayScreen(QWidget):
         self.control_card = QFrame(self)
         self.control_card.setObjectName("card-frame")
         control_layout = QVBoxLayout(self.control_card)
-        control_layout.setSpacing(15)
+        control_layout.setSpacing(10)
         
         control_title = QLabel("Restaurant Operations", self)
         control_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
@@ -55,7 +57,12 @@ class GameplayScreen(QWidget):
         self.energy_readout.setStyleSheet("font-size: 14px; font-weight: bold;")
         control_layout.addWidget(self.energy_readout)
         
-        # Slider to choose work hours
+        # 1. MORNING PREP WIDGET
+        self.morning_widget = QWidget(self)
+        morning_layout = QVBoxLayout(self.morning_widget)
+        morning_layout.setContentsMargins(0, 0, 0, 0)
+        morning_layout.setSpacing(12)
+        
         hours_layout = QVBoxLayout()
         hours_header_layout = QHBoxLayout()
         hours_lbl = QLabel("Your Work Hours Today:", self)
@@ -77,14 +84,38 @@ class GameplayScreen(QWidget):
         self.energy_cost_lbl.setStyleSheet("font-size: 12px; color: #666666;")
         hours_layout.addWidget(self.energy_cost_lbl)
         
-        control_layout.addLayout(hours_layout)
+        morning_layout.addLayout(hours_layout)
         
-        # Open Restaurant Button
         self.open_btn = QPushButton("🍳 Open Restaurant & Start Simulation", self)
         self.open_btn.setObjectName("primary-action-btn")
         self.open_btn.setMinimumHeight(45)
         self.open_btn.clicked.connect(self.on_open_clicked)
-        control_layout.addWidget(self.open_btn)
+        morning_layout.addWidget(self.open_btn)
+        
+        control_layout.addWidget(self.morning_widget)
+        
+        # 2. EVENING CHOICES WIDGET
+        self.evening_widget = QWidget(self)
+        evening_layout = QVBoxLayout(self.evening_widget)
+        evening_layout.setContentsMargins(0, 0, 0, 0)
+        evening_layout.setSpacing(12)
+        
+        self.evening_lbl = QLabel("🌓 Evening Phase - Time to unwind.", self)
+        self.evening_lbl.setStyleSheet("font-style: italic; color: #555555;")
+        evening_layout.addWidget(self.evening_lbl)
+        
+        self.tavern_btn = QPushButton("🍻 Visit Oakhaven Tavern (-15 Energy)", self)
+        self.tavern_btn.setMinimumHeight(40)
+        self.tavern_btn.clicked.connect(self.go_to_tavern.emit)
+        evening_layout.addWidget(self.tavern_btn)
+        
+        self.sleep_btn = QPushButton("🛌 Go to Sleep & End Day", self)
+        self.sleep_btn.setObjectName("primary-action-btn")
+        self.sleep_btn.setMinimumHeight(40)
+        self.sleep_btn.clicked.connect(self.sleep_clicked.emit)
+        evening_layout.addWidget(self.sleep_btn)
+        
+        control_layout.addWidget(self.evening_widget)
         
         left_layout.addWidget(self.control_card)
         
@@ -156,13 +187,29 @@ class GameplayScreen(QWidget):
         hours = self.hours_slider.value()
         self.restaurant_opened.emit(hours)
 
-    def update_ui(self):
+    def update_ui(self, evening_mode=False):
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
         h = self.state.house
         c = self.state.competitor
         
+        # Toggle Morning vs Evening controls visibility
+        self.morning_widget.setVisible(not evening_mode)
+        self.evening_widget.setVisible(evening_mode)
+        
+        if evening_mode:
+            # Tavern button check
+            is_level_ok = r.level >= 3
+            has_energy = p.energy >= 15
+            self.tavern_btn.setEnabled(is_level_ok and has_energy)
+            if not is_level_ok:
+                self.tavern_btn.setText("🍻 Tavern Locked (Requires Level 3)")
+            elif not has_energy:
+                self.tavern_btn.setText("🍻 Too Exhausted for Tavern (Needs 15 Energy)")
+            else:
+                self.tavern_btn.setText("🍻 Visit Oakhaven Tavern (-15 Energy)")
+                
         # Update energy readout
         self.energy_readout.setText(f"Your Energy: {p.energy:.1f}/{p.max_energy}")
         self.on_slider_changed(self.hours_slider.value())

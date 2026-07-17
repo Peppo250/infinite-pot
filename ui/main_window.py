@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
         self.days_survived_competitor = 0
         self.victory = False
         self.game_over = False
+        self.evening_phase = False
         
         # Central widget and layout
         self.central_widget = QWidget(self)
@@ -69,15 +70,17 @@ class MainWindow(QMainWindow):
         self.gameplay_screen.manage_business.connect(self.show_business)
         self.gameplay_screen.personal_life.connect(self.show_personal_life)
         self.gameplay_screen.restaurant_opened.connect(self.on_open_restaurant)
+        self.gameplay_screen.go_to_tavern.connect(self.on_visit_tavern)
+        self.gameplay_screen.sleep_clicked.connect(self.on_sleep_and_end_day)
         
         self.business_screen.go_back.connect(self.show_gameplay)
         self.business_screen.state_changed.connect(self.update_hud)
         
         self.personal_life_screen.go_back.connect(self.show_gameplay)
         self.personal_life_screen.state_changed.connect(self.update_hud)
-        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)  # Directs to tavern screen
+        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)
         
-        self.tavern_screen.go_back.connect(self.show_personal_life)
+        self.tavern_screen.go_back.connect(self.show_gameplay)
         self.tavern_screen.state_changed.connect(self.update_hud)
         
         self.game_over_screen.restart_game.connect(self.on_restart_game)
@@ -200,7 +203,7 @@ class MainWindow(QMainWindow):
     def show_gameplay(self):
         UIAudio.play_music("hotel")
         self.hud_bar.setVisible(True)
-        self.gameplay_screen.update_ui()
+        self.gameplay_screen.update_ui(self.evening_phase)
         self.update_hud()
         self.animate_switch(1)
 
@@ -244,6 +247,7 @@ class MainWindow(QMainWindow):
         self.days_survived_competitor = 0
         self.victory = False
         self.game_over = False
+        self.evening_phase = False
         
         # Recreate screens
         self.gameplay_screen = GameplayScreen(self.state, self)
@@ -282,27 +286,44 @@ class MainWindow(QMainWindow):
         if sim['actual_served'] > 0:
             UIAudio.play_coin()
             
-        # 2. Transition music to home (review ledger / sleep phase)
+        # 2. Transition music to home (review ledger phase)
         UIAudio.play_music("home")
         
         # 3. Present Ledger Check Receipt popup dialog
         dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
         dlg.exec()
         
-        # 4. Check for random narrative events BEFORE sleep
+        # 4. Enable evening phase and refresh gameplay hub controls
+        self.evening_phase = True
+        self.show_gameplay()
+
+    def on_visit_tavern(self):
+        p = self.state.player
+        if p.energy < 15:
+            ConfirmDialog("Too Exhausted", "You are too exhausted to visit the Tavern tonight! (15 Energy required)", self).exec()
+            return
+            
+        p.adjust_energy(-15)
+        self.state.finance.record_transaction("Misc", 0, "Visited Tavern")
+        self.show_tavern()
+
+    def on_sleep_and_end_day(self):
+        UIAudio.play_click()
+        
+        # 1. Check and trigger random events BEFORE sleep
         triggered_event = self.state.events.check_and_trigger_event(self.state)
         if triggered_event:
             UIAudio.play_notify()
             self.handle_triggered_event(triggered_event)
             
-        # 5. Advance day (sleep, maintenance, deductions)
+        # 2. Advance day (sleep, maintenance, payroll deductions)
         notifications = self.state.advance_day()
         if notifications:
             UIAudio.play_notify()
             for note in notifications:
                 self.notification_manager.add_notification(note, "info")
                 
-        # 6. Competitor check
+        # 3. Competitor survival progression check
         c = self.state.competitor
         if c.is_active:
             is_married = self.state.romance.is_co_owner
@@ -324,12 +345,13 @@ class MainWindow(QMainWindow):
                     self.days_survived_competitor = 0
                     self.notification_manager.add_notification("Lost survival focus! Smear count reset.", "warning")
                     
-        # 7. Game Over conditions
+        # 4. Game Over conditions check
         p = self.state.player
         if p.cash <= -500.0 or p.energy <= 0 or self.game_over:
             self.show_game_over()
         else:
-            # Continue gameplay
+            # Transition back to morning prep phase
+            self.evening_phase = False
             self.show_gameplay()
 
     def handle_triggered_event(self, event):
@@ -368,7 +390,7 @@ class MainWindow(QMainWindow):
             
         # Re-verify and refresh current active screen content
         if self.stacked_widget.currentIndex() == 1:
-            self.gameplay_screen.update_ui()
+            self.gameplay_screen.update_ui(self.evening_phase)
         elif self.stacked_widget.currentIndex() == 2:
             self.business_screen.update_ui()
         elif self.stacked_widget.currentIndex() == 3:
