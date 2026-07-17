@@ -1,0 +1,347 @@
+# ui/main_window.py
+import sys
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame
+from PySide6.QtCore import Qt, QTimer
+from ui.theme import ThemeManager
+from ui.audio import UIAudio
+from ui.widgets.notifications import NotificationManager
+from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog
+
+from ui.screens.main_menu import MainMenuScreen
+from ui.screens.gameplay import GameplayScreen
+from ui.screens.business_menu import BusinessMenuScreen
+from ui.screens.personal_life_menu import PersonalLifeScreen
+from ui.screens.tavern_menu import TavernMenuScreen
+from ui.screens.game_over import GameOverScreen
+
+class MainWindow(QMainWindow):
+    def __init__(self, state, parent=None):
+        super().__init__(parent)
+        self.state = state
+        
+        self.setWindowTitle("Infinite Pot — V1 Desktop Prototype")
+        self.resize(1000, 700)
+        self.setStyleSheet(ThemeManager.get_style_sheet())
+        
+        self.days_survived_competitor = 0
+        self.victory = False
+        self.game_over = False
+        
+        # Central widget and layout
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+        self.main_layout = QVBoxLayout(self.central_widget)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
+        
+        # 1. Top HUD Bar
+        self.init_hud_bar()
+        self.hud_bar.setVisible(False)  # Hidden on Main Menu
+        self.main_layout.addWidget(self.hud_bar)
+        
+        # 2. Stacked Screen Layout
+        self.stacked_widget = QStackedWidget(self)
+        self.main_layout.addWidget(self.stacked_widget)
+        
+        # Instantiate Screens
+        self.main_menu_screen = MainMenuScreen(self)
+        self.gameplay_screen = GameplayScreen(self.state, self)
+        self.business_screen = BusinessMenuScreen(self.state, self)
+        self.personal_life_screen = PersonalLifeScreen(self.state, self)
+        self.tavern_screen = TavernMenuScreen(self.state, self)
+        self.game_over_screen = GameOverScreen(self)
+        
+        # Add to stack
+        self.stacked_widget.addWidget(self.main_menu_screen)        # Index 0
+        self.stacked_widget.addWidget(self.gameplay_screen)        # Index 1
+        self.stacked_widget.addWidget(self.business_screen)        # Index 2
+        self.stacked_widget.addWidget(self.personal_life_screen)    # Index 3
+        self.stacked_widget.addWidget(self.tavern_screen)         # Index 4
+        self.stacked_widget.addWidget(self.game_over_screen)       # Index 5
+        
+        # 3. Notification overlay
+        self.notification_manager = NotificationManager(self.central_widget)
+        
+        # Connect Signals
+        self.main_menu_screen.start_game.connect(self.on_start_game)
+        self.main_menu_screen.quit_game.connect(self.close)
+        
+        self.gameplay_screen.manage_business.connect(self.show_business)
+        self.gameplay_screen.personal_life.connect(self.show_personal_life)
+        self.gameplay_screen.restaurant_opened.connect(self.on_open_restaurant)
+        
+        self.business_screen.go_back.connect(self.show_gameplay)
+        self.business_screen.state_changed.connect(self.update_hud)
+        
+        self.personal_life_screen.go_back.connect(self.show_gameplay)
+        self.personal_life_screen.state_changed.connect(self.update_hud)
+        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)  # Directs to tavern screen
+        
+        self.tavern_screen.go_back.connect(self.show_personal_life)
+        self.tavern_screen.state_changed.connect(self.update_hud)
+        
+        self.game_over_screen.restart_game.connect(self.on_restart_game)
+        self.game_over_screen.quit_game.connect(self.close)
+        
+        # Start Theme Music
+        UIAudio.play_music("home")
+        
+        # Show Main Menu
+        self.stacked_widget.setCurrentIndex(0)
+
+    def init_hud_bar(self):
+        self.hud_bar = QFrame(self)
+        self.hud_bar.setObjectName("hud-bar")
+        hud_layout = QHBoxLayout(self.hud_bar)
+        hud_layout.setContentsMargins(15, 8, 15, 8)
+        hud_layout.setSpacing(20)
+        
+        # Left side: Shop Name, Day, Cash
+        left_layout = QHBoxLayout()
+        self.shop_name_lbl = QLabel("Shop Name", self)
+        self.shop_name_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        left_layout.addWidget(self.shop_name_lbl)
+        
+        left_layout.addSpacing(10)
+        
+        self.day_lbl = QLabel("Day 1 (Mon)", self)
+        self.day_lbl.setObjectName("hud-label")
+        left_layout.addWidget(self.day_lbl)
+        
+        left_layout.addSpacing(10)
+        
+        self.cash_lbl = QLabel("$0.00", self)
+        self.cash_lbl.setStyleSheet(f"font-size: 17px; font-weight: bold; color: #4F6F52;") # green accent for money
+        left_layout.addWidget(self.cash_lbl)
+        
+        hud_layout.addLayout(left_layout)
+        
+        # Center: Energy Bar & Reputation
+        center_layout = QHBoxLayout()
+        center_layout.setSpacing(15)
+        
+        # Energy
+        energy_lbl = QLabel("Energy:", self)
+        energy_lbl.setObjectName("hud-label")
+        center_layout.addWidget(energy_lbl)
+        
+        self.energy_bar = QProgressBar(self)
+        self.energy_bar.setRange(0, 100)
+        self.energy_bar.setValue(100)
+        self.energy_bar.setMaximumWidth(120)
+        self.energy_bar.setStyleSheet("""
+            QProgressBar::chunk { background-color: #E25E3E; }
+        """)
+        center_layout.addWidget(self.energy_bar)
+        
+        # Reputation
+        rep_lbl = QLabel("Reputation:", self)
+        rep_lbl.setObjectName("hud-label")
+        center_layout.addWidget(rep_lbl)
+        
+        self.rep_bar = QProgressBar(self)
+        self.rep_bar.setRange(0, 100)
+        self.rep_bar.setValue(20)
+        self.rep_bar.setFormat("%v/100")
+        self.rep_bar.setMaximumWidth(120)
+        self.rep_bar.setStyleSheet("""
+            QProgressBar::chunk { background-color: #82A0D8; }
+        """)
+        center_layout.addWidget(self.rep_bar)
+        
+        hud_layout.addLayout(center_layout)
+        
+        # Right side: Partner Info
+        self.partner_lbl = QLabel("Single", self)
+        self.partner_lbl.setObjectName("hud-label")
+        self.partner_lbl.setStyleSheet("font-style: italic; color: #555555;")
+        hud_layout.addWidget(self.partner_lbl, alignment=Qt.AlignRight)
+
+    def show_main_menu(self):
+        UIAudio.play_music("home")
+        self.hud_bar.setVisible(False)
+        self.stacked_widget.setCurrentIndex(0)
+
+    def show_gameplay(self):
+        UIAudio.play_music("hotel")
+        self.hud_bar.setVisible(True)
+        self.gameplay_screen.update_ui()
+        self.update_hud()
+        self.stacked_widget.setCurrentIndex(1)
+
+    def show_business(self):
+        UIAudio.play_music("hotel")
+        self.business_screen.update_ui()
+        self.stacked_widget.setCurrentIndex(2)
+
+    def show_personal_life(self):
+        UIAudio.play_music("romance")
+        self.personal_life_screen.update_ui()
+        self.stacked_widget.setCurrentIndex(3)
+
+    def show_tavern(self):
+        UIAudio.play_music("bar")
+        self.tavern_screen.update_ui()
+        self.stacked_widget.setCurrentIndex(4)
+
+    def show_game_over(self):
+        UIAudio.play_music("home")
+        self.hud_bar.setVisible(False)
+        p = self.state.player
+        r = self.state.restaurant
+        rom = self.state.romance
+        self.game_over_screen.set_results(self.victory, rom.partner_name, r.reputation, p.cash)
+        self.stacked_widget.setCurrentIndex(5)
+
+    def on_start_game(self):
+        # Prompt for shop name
+        dlg = TextInputDialog("Welcome to Infinite Pot!", "What will be the name of your restaurant?", "Mystic Diner", self)
+        if dlg.exec():
+            name = dlg.get_text()
+            self.state.restaurant.custom_name = name
+            self.show_gameplay()
+            self.notification_manager.add_notification("Journey started! Welcome to Level 0.", "success")
+
+    def on_restart_game(self):
+        # Reinstate state from config
+        from engine.state import GameState
+        self.state = GameState()
+        self.days_survived_competitor = 0
+        self.victory = False
+        self.game_over = False
+        
+        # Recreate screens
+        self.gameplay_screen = GameplayScreen(self.state, self)
+        self.business_screen = BusinessMenuScreen(self.state, self)
+        self.personal_life_screen = PersonalLifeScreen(self.state, self)
+        self.tavern_screen = TavernMenuScreen(self.state, self)
+        
+        self.gameplay_screen.manage_business.connect(self.show_business)
+        self.gameplay_screen.personal_life.connect(self.show_personal_life)
+        self.gameplay_screen.restaurant_opened.connect(self.on_open_restaurant)
+        
+        self.business_screen.go_back.connect(self.show_gameplay)
+        self.business_screen.state_changed.connect(self.update_hud)
+        self.personal_life_screen.go_back.connect(self.show_gameplay)
+        self.personal_life_screen.state_changed.connect(self.update_hud)
+        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)
+        self.tavern_screen.go_back.connect(self.show_personal_life)
+        self.tavern_screen.state_changed.connect(self.update_hud)
+        
+        # Re-add to stacked layout
+        self.stacked_widget.removeWidget(self.stacked_widget.widget(1))
+        self.stacked_widget.removeWidget(self.stacked_widget.widget(1))
+        self.stacked_widget.removeWidget(self.stacked_widget.widget(1))
+        self.stacked_widget.removeWidget(self.stacked_widget.widget(1))
+        
+        self.stacked_widget.insertWidget(1, self.gameplay_screen)
+        self.stacked_widget.insertWidget(2, self.business_screen)
+        self.stacked_widget.insertWidget(3, self.personal_life_screen)
+        self.stacked_widget.insertWidget(4, self.tavern_screen)
+        
+        self.show_main_menu()
+
+    def on_open_restaurant(self, hours: int):
+        # 1. Run simulation
+        sim = self.state.simulate_business_day(hours)
+        if sim['actual_served'] > 0:
+            UIAudio.play_coin()
+            
+        # 2. Transition music to home (review ledger / sleep phase)
+        UIAudio.play_music("home")
+        
+        # 3. Present Ledger Check Receipt popup dialog
+        dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
+        dlg.exec()
+        
+        # 4. Check for random narrative events BEFORE sleep
+        triggered_event = self.state.events.check_and_trigger_event(self.state)
+        if triggered_event:
+            UIAudio.play_notify()
+            self.handle_triggered_event(triggered_event)
+            
+        # 5. Advance day (sleep, maintenance, deductions)
+        notifications = self.state.advance_day()
+        if notifications:
+            UIAudio.play_notify()
+            for note in notifications:
+                self.notification_manager.add_notification(note, "info")
+                
+        # 6. Competitor check
+        c = self.state.competitor
+        if c.is_active:
+            is_married = self.state.romance.is_co_owner
+            has_wedding = self.state.romance.wedding_tier != "None"
+            
+            if (self.state.restaurant.reputation >= 60.0 and 
+                self.state.romance.romance_level >= 80.0 and 
+                is_married and 
+                has_wedding):
+                self.days_survived_competitor += 1
+                self.notification_manager.add_notification(
+                    f"Survived rival smear campaign: {self.days_survived_competitor}/10 days", "success"
+                )
+                if self.days_survived_competitor >= 10:
+                    self.victory = True
+                    self.game_over = True
+            else:
+                if self.days_survived_competitor > 0:
+                    self.days_survived_competitor = 0
+                    self.notification_manager.add_notification("Lost survival focus! Smear count reset.", "warning")
+                    
+        # 7. Game Over conditions
+        p = self.state.player
+        if p.cash <= -500.0 or p.energy <= 0 or self.game_over:
+            self.show_game_over()
+        else:
+            # Continue gameplay
+            self.show_gameplay()
+
+    def handle_triggered_event(self, event):
+        valid_options = [o for o in event.options if o.condition(self.state)]
+        option_texts = [opt.text for opt in valid_options]
+        
+        dlg = ChoicesDialog(f"EVENT: {event.title}", event.description, option_texts, self)
+        if dlg.exec() and dlg.chosen_index != -1:
+            chosen_idx = dlg.chosen_index
+            chosen_text, outcome_text = self.state.events.resolve_event(chosen_idx, self.state)
+            
+            # Show resolution in modal confirmation
+            ConfirmDialog("Event Outcome", f"You chose: {chosen_text}\n\n{outcome_text}", self).exec()
+            self.update_hud()
+
+    def update_hud(self):
+        p = self.state.player
+        r = self.state.restaurant
+        rom = self.state.romance
+        
+        self.shop_name_lbl.setText(r.name)
+        self.day_lbl.setText(f"Day {self.state.day} ({self.state.day_name})")
+        self.cash_lbl.setText(f"${p.cash:.2f}")
+        
+        self.energy_bar.setValue(max(0, min(100, int(p.energy))))
+        self.energy_bar.setFormat(f"Energy: {p.energy:.0f}/{p.max_energy}")
+        
+        self.rep_bar.setValue(max(0, min(100, int(r.reputation))))
+        
+        partner = rom.partner
+        if not partner:
+            self.partner_lbl.setText("Single")
+        else:
+            rel = rom.stage_name
+            self.partner_lbl.setText(f"🌹 {partner.name} ({rel})")
+            
+        # Re-verify and refresh current active screen content
+        if self.stacked_widget.currentIndex() == 1:
+            self.gameplay_screen.update_ui()
+        elif self.stacked_widget.currentIndex() == 2:
+            self.business_screen.update_ui()
+        elif self.stacked_widget.currentIndex() == 3:
+            self.personal_life_screen.update_ui()
+        elif self.stacked_widget.currentIndex() == 4:
+            self.tavern_screen.update_ui()
+            
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Re-fit notification manager dimensions
+        self.notification_manager.fit_parent()
