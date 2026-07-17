@@ -6,6 +6,7 @@ from typing import Any
 
 from colorama import init, Fore, Back, Style
 from engine.state import GameState
+from engine.audio import audio_manager
 
 # Initialize colorama
 init(autoreset=True)
@@ -118,6 +119,7 @@ class GameLoop:
             print(f"  [ ] Survive for {Fore.YELLOW}{10 - self.days_survived_competitor}{Fore.RESET} more days under competitor threat.")
 
     def run(self) -> None:
+        audio_manager.play_music("home")
         self.clear_screen()
         print(Fore.CYAN + "=== WELCOME TO THE INFINITE POT PROTOTYPE ===")
         print("A simulation about cooking magic food and figuring out what you are working for.\n")
@@ -165,6 +167,7 @@ class GameLoop:
             print("Q. Quit Prototype")
 
             choice = input("\nSelect an option: ").strip().lower()
+            audio_manager.play_sfx("select")
 
             if choice == "1":
                 self.menu_manage_business()
@@ -174,6 +177,7 @@ class GameLoop:
                 self.run_business_day()
             elif choice == "q":
                 confirm = input("Are you sure you want to quit? (y/n): ").lower()
+                audio_manager.play_sfx("select")
                 if confirm == "y":
                     self.game_over = True
             else:
@@ -182,6 +186,7 @@ class GameLoop:
 
         self.clear_screen()
         if self.victory:
+            audio_manager.play_sfx("success")
             self.print_header("Victory!", Fore.GREEN)
             print("\nCongratulations! You have completed the V1 Prototype of Infinite Pot.")
             print(f"You successfully upgraded to a full Town Restaurant, bought a cozy home,")
@@ -222,6 +227,7 @@ class GameLoop:
             print("B. Back to Main Menu")
 
             choice = input("\nSelect: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "1":
                 try:
                     price = float(input(f"Enter new price per meal (Current: ${r.menu_price:.2f}): "))
@@ -229,6 +235,7 @@ class GameLoop:
                         print(Fore.RED + "Price must be positive.")
                     else:
                         r.menu_price = round(price, 2)
+                        audio_manager.play_sfx("button_click")
                         print(Fore.GREEN + f"Meal price set to ${r.menu_price:.2f}.")
                 except ValueError:
                     print(Fore.RED + "Invalid number format.")
@@ -242,6 +249,7 @@ class GameLoop:
             elif choice == "5" and self.state.competitor.is_active:
                 success, msg, cost = self.state.competitor.activate_counter_marketing(p.cash)
                 if success:
+                    audio_manager.play_sfx("coin")
                     p.adjust_cash(-cost)
                     self.state.finance.record_transaction("Marketing", cost, "Counter marketing flyer run")
                     print(Fore.GREEN + msg)
@@ -251,10 +259,13 @@ class GameLoop:
             elif choice == "u" and r.level < 4:
                 success, msg, cost = r.upgrade_level(p.cash)
                 if success:
+                    audio_manager.play_sfx("coin")
+                    audio_manager.play_sfx("success")
                     p.adjust_cash(-cost)
                     self.state.finance.record_transaction("Upgrade", cost, f"Upgraded restaurant to Level {r.level}")
                     print(Fore.GREEN + msg)
                     rename_choice = input("Would you like to rename your business for this new era? (y/n): ").lower()
+                    audio_manager.play_sfx("select")
                     if rename_choice == 'y':
                         new_name = input("Enter new business name: ").strip()
                         if new_name:
@@ -292,6 +303,7 @@ class GameLoop:
 
             print("B. Back")
             choice = input("Select upgrade to buy: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "b":
                 break
             try:
@@ -300,6 +312,8 @@ class GameLoop:
                     target = available[idx]
                     success, msg, cost = r.buy_upgrade(target.id, p.cash)
                     if success:
+                        audio_manager.play_sfx("coin")
+                        audio_manager.play_sfx("success")
                         p.adjust_cash(-cost)
                         self.state.finance.record_transaction("Upgrade", cost, f"Bought business upgrade: {target.name}")
                         print(Fore.GREEN + msg)
@@ -330,11 +344,13 @@ class GameLoop:
             print("B. Back")
 
             choice = input("\nSelect: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "1":
                 try:
                     amount = float(input("Enter amount to borrow: "))
                     success, msg = l.borrow(amount, r.level)
                     if success:
+                        audio_manager.play_sfx("coin")
                         p.adjust_cash(amount)
                         print(Fore.GREEN + msg)
                     else:
@@ -351,6 +367,7 @@ class GameLoop:
                     amount = float(input(f"Enter amount to repay (Max: ${l.balance:.2f}): "))
                     success, msg, cash_spent = l.pay_loan(amount, p.cash)
                     if success:
+                        audio_manager.play_sfx("coin")
                         p.adjust_cash(-cash_spent)
                         self.state.finance.record_transaction("Misc", -cash_spent, f"Repaid loan principal")
                         print(Fore.GREEN + msg)
@@ -383,6 +400,7 @@ class GameLoop:
             print("B. Back")
 
             choice = input("\nSelect: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "1":
                 if not es.hired:
                     print(Fore.YELLOW + "No employees to fire.")
@@ -399,6 +417,7 @@ class GameLoop:
                 break
 
     def menu_personal_life(self) -> None:
+        audio_manager.play_music("romance")
         while True:
             self.clear_screen()
             self.print_header("Personal Life")
@@ -436,10 +455,13 @@ class GameLoop:
             print("B. Back")
 
             choice = input("\nSelect: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "1" and partner:
                 mult = 1.0 + h.get_romance_progress_bonus()
                 success, msg, cash_spent, energy_spent = rom.go_on_date(p.cash, p.energy, progress_multiplier=mult)
                 if success:
+                    audio_manager.play_sfx("coin")
+                    audio_manager.play_sfx("success")
                     p.adjust_cash(-cash_spent)
                     p.adjust_energy(-energy_spent)
                     self.state.finance.record_transaction("Date", cash_spent, f"Went on date with {partner.name}")
@@ -450,6 +472,8 @@ class GameLoop:
             elif choice == "2":
                 if not h.purchased:
                     if p.cash >= h.cost:
+                        audio_manager.play_sfx("coin")
+                        audio_manager.play_sfx("success")
                         p.adjust_cash(-h.cost)
                         h.purchased = True
                         p.has_house = True
@@ -463,17 +487,20 @@ class GameLoop:
             elif choice == "3" and partner and not rom.is_co_owner:
                 success, msg = rom.ask_to_co_own(h.purchased)
                 if success:
+                    audio_manager.play_sfx("success")
                     print(Fore.GREEN + msg)
                 else:
                     print(Fore.RED + msg)
                 input("\nPress Enter to continue...")
             elif choice == "4" and partner:
                 confirm = input(f"Are you sure you want to break up with {partner.name}? (y/n): ").lower()
+                audio_manager.play_sfx("select")
                 if confirm == 'y':
                     success, msg = rom.break_up()
                     print(Fore.GREEN + msg)
                 input("\nPress Enter to continue...")
             elif choice == "b":
+                audio_manager.play_music("home")
                 break
 
     def submenu_house_upgrades(self) -> None:
@@ -498,6 +525,7 @@ class GameLoop:
 
             print("B. Back")
             choice = input("Select upgrade to buy: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == "b":
                 break
             try:
@@ -506,6 +534,8 @@ class GameLoop:
                     target = available[idx]
                     success, msg, cost = h.buy_upgrade(target.id, p.cash)
                     if success:
+                        audio_manager.play_sfx("coin")
+                        audio_manager.play_sfx("success")
                         p.adjust_cash(-cost)
                         self.state.finance.record_transaction("Upgrade", cost, f"Bought house upgrade: {target.name}")
                         print(Fore.GREEN + msg)
@@ -558,6 +588,8 @@ class GameLoop:
         time.sleep(0.8)
         
         sim = self.state.simulate_business_day(work_hours)
+        if sim['actual_served'] > 0:
+            audio_manager.play_sfx("coin")
         
         self.clear_screen()
         self.print_header("End of Business Day")
@@ -581,6 +613,7 @@ class GameLoop:
         input()
 
         # 3. Night phase / Overnight adjustments
+        audio_manager.play_sfx("coin")
         self.clear_screen()
         self.print_header("Overnight Ledger")
         
@@ -604,6 +637,7 @@ class GameLoop:
                 print("2. Sleep in the shop (Partially restores energy)")
             
             opt = input("\nSelect: ").strip()
+            audio_manager.play_sfx("select")
             if opt == '1' and self.state.restaurant.level >= 3:
                 if p.energy < 15:
                     print(Fore.RED + "You are too exhausted to go out tonight!")
@@ -620,12 +654,14 @@ class GameLoop:
         # Check and trigger random events BEFORE sleep
         triggered_event = self.state.events.check_and_trigger_event(self.state)
         if triggered_event:
+            audio_manager.play_sfx("notify")
             self.handle_triggered_event(triggered_event)
 
         # Advance day
         notifications = self.state.advance_day()
         
         if notifications:
+            audio_manager.play_sfx("notify")
             print(Fore.YELLOW + "\nNotifications:")
             for note in notifications:
                 print(f"  • {note}")
@@ -647,6 +683,7 @@ class GameLoop:
         input()
 
     def menu_bar(self) -> None:
+        audio_manager.play_music("hotel")
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
@@ -687,7 +724,9 @@ class GameLoop:
             
             print("Select a number to interact, or 'B' to leave: ")
             ans = input().strip().lower()
+            audio_manager.play_sfx("select")
             if ans == 'b':
+                audio_manager.play_music("home")
                 break
                 
             try:
@@ -731,6 +770,7 @@ class GameLoop:
             print("B. Back")
             
             choice = input("\nSelect: ").strip().lower()
+            audio_manager.play_sfx("select")
             if choice == 'b':
                 break
             elif choice == '1':
@@ -739,6 +779,7 @@ class GameLoop:
                 else:
                     p.adjust_energy(-10)
                     dialogue, gain = girl.interact_talk()
+                    audio_manager.play_sfx("dialogue")
                     print(Fore.GREEN + dialogue)
                 input("\nPress Enter...")
             elif choice == '2':
@@ -747,10 +788,12 @@ class GameLoop:
                 elif p.energy < 10:
                     print(Fore.RED + "Too tired!")
                 else:
+                    audio_manager.play_sfx("coin")
                     p.adjust_cash(-25.0)
                     p.adjust_energy(-10)
                     self.state.finance.record_transaction("Date", 25.0, f"Bought drink for {girl.name}")
                     dialogue, gain = girl.interact_drink(25.0)
+                    audio_manager.play_sfx("dialogue")
                     print(Fore.GREEN + dialogue)
                 input("\nPress Enter...")
             elif choice == '3':
@@ -761,6 +804,7 @@ class GameLoop:
                         p.adjust_energy(-10)
                         success, msg = rom.propose_relationship(girl.name)
                         if success:
+                            audio_manager.play_sfx("success")
                             print(Fore.GREEN + msg)
                         else:
                             print(Fore.RED + msg)
@@ -772,15 +816,18 @@ class GameLoop:
                         p.adjust_energy(-10)
                         success, msg = rom.ask_to_co_own(h.purchased)
                         if success:
+                            audio_manager.play_sfx("success")
                             print(Fore.GREEN + msg)
                         else:
                             print(Fore.RED + msg)
                     input("\nPress Enter...")
                 elif girl.is_co_owner:
+                    audio_manager.play_sfx("dialogue")
                     print(Fore.GREEN + f"{girl.name} kisses you. 'Let's keep building our life together, darling.'")
                     input("\nPress Enter...")
             elif choice == '4' and girl.is_partner and not girl.is_co_owner:
                 confirm = input(f"Are you sure you want to break up with {girl.name}? (y/n): ").lower()
+                audio_manager.play_sfx("select")
                 if confirm == 'y':
                     success, msg = rom.break_up()
                     print(Fore.GREEN + msg)
@@ -799,9 +846,11 @@ class GameLoop:
         print("-" * 50)
         
         choice = input(f"Do you want to hire {candidate.name}? (y/n): ").lower()
+        audio_manager.play_sfx("select")
         if choice == 'y':
             success, msg = es.hire_employee(candidate.name, r.current_config.max_employees)
             if success:
+                audio_manager.play_sfx("success")
                 print(Fore.GREEN + msg)
             else:
                 print(Fore.RED + msg)
@@ -822,6 +871,7 @@ class GameLoop:
         while True:
             try:
                 ans = input("\nMake your decision: ").strip()
+                audio_manager.play_sfx("select")
                 choice = int(ans) - 1
                 if 0 <= choice < len(valid_options):
                     break
