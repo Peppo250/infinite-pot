@@ -1,6 +1,6 @@
-# ui/screens/gameplay.py
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSlider, QFrame, QGroupBox
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 
@@ -106,7 +106,17 @@ class GameplayScreen(QWidget):
         
         main_layout.addLayout(left_layout, stretch=3)
         
-        # RIGHT COLUMN: Current Objectives
+        # RIGHT COLUMN: Current Objectives & Environment View
+        right_column = QVBoxLayout()
+        right_column.setSpacing(15)
+        
+        # Pixel Art Environment Banner
+        self.env_img = QLabel(self)
+        self.env_img.setStyleSheet(f"border: 4px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
+        pixmap = QPixmap("assets/images/restaurant_bg.jpg")
+        self.env_img.setPixmap(pixmap.scaled(320, 180, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+        right_column.addWidget(self.env_img, alignment=Qt.AlignCenter)
+        
         self.obj_card = QFrame(self)
         self.obj_card.setObjectName("card-frame")
         obj_layout = QVBoxLayout(self.obj_card)
@@ -122,7 +132,8 @@ class GameplayScreen(QWidget):
         self.obj_content.setStyleSheet("line-height: 1.4;")
         obj_layout.addWidget(self.obj_content)
         
-        main_layout.addWidget(self.obj_card, stretch=2)
+        right_column.addWidget(self.obj_card, stretch=1)
+        main_layout.addLayout(right_column, stretch=2)
         
         # Initialize
         self.update_ui()

@@ -14,10 +14,29 @@ class MainMenuScreen(QWidget):
         layout.setContentsMargins(50, 50, 50, 50)
         layout.setAlignment(Qt.AlignCenter)
         
+        # Style Main Menu with retro pixel background
+        self.setStyleSheet(f"""
+            MainMenuScreen {{
+                background-image: url(assets/images/title_bg.jpg);
+                background-position: center;
+                background-repeat: no-repeat;
+            }}
+            QLabel {{
+                background-color: rgba(252, 248, 242, 0.85);
+                border: 2px solid {ThemeManager.DARK_BROWN};
+                border-radius: 0px;
+                padding: 6px;
+            }}
+            QPushButton {{
+                min-width: 200px;
+            }}
+        """)
+        
         # Logo / Title
-        self.logo_label = QLabel("🍲 INFINITE POT 🍲", self)
+        self.logo_label = QLabel("🍲  INFINITE POT  🍲", self)
         self.logo_label.setStyleSheet(f"""
-            font-size: 42px;
+            font-family: "{ThemeManager.HEADER_FONT}";
+            font-size: 24px;
             font-weight: bold;
             color: {ThemeManager.DARK_BROWN};
             margin-bottom: 5px;
@@ -27,7 +46,7 @@ class MainMenuScreen(QWidget):
         
         self.subtitle = QLabel("Build a Business to Build a Life", self)
         self.subtitle.setStyleSheet(f"""
-            font-size: 18px;
+            font-size: 22px;
             font-style: italic;
             color: {ThemeManager.DARK_CHARCOAL};
             margin-bottom: 40px;
@@ -58,11 +77,11 @@ class MainMenuScreen(QWidget):
         layout.addWidget(self.quit_btn, alignment=Qt.AlignCenter)
         
         # Spacer
-        layout.addItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        layout.addItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
         
         # Footer
         self.footer = QLabel("V1 Playable Prototype • Made with PySide6 & Pygame", self)
-        self.footer.setStyleSheet("font-size: 11px; color: #888888;")
+        self.footer.setStyleSheet("font-size: 14px; color: #4F3422;")
         self.footer.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.footer)
 

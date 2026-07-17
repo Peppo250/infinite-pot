@@ -1,6 +1,6 @@
-# ui/screens/personal_life_menu.py
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QProgressBar, QFrame, QScrollArea
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.dialogs.custom_dialogs import ConfirmDialog
@@ -89,6 +89,12 @@ class PersonalLifeScreen(QWidget):
         house_title = QLabel("🏡 Home & Real Estate", self)
         house_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.house_layout.addWidget(house_title)
+        
+        self.house_img = QLabel(self)
+        self.house_img.setStyleSheet(f"border: 3px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
+        pixmap = QPixmap("assets/images/cottage_bg.jpg")
+        self.house_img.setPixmap(pixmap.scaled(320, 150, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
+        self.house_layout.addWidget(self.house_img)
         
         self.house_lbl = QLabel("You sleep on the floor of your shop.", self)
         self.house_lbl.setWordWrap(True)

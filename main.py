@@ -17,6 +17,8 @@ def main() -> None:
         else:
             # Launch Desktop GUI mode
             app = QApplication(sys.argv)
+            from ui.theme import ThemeManager
+            ThemeManager.initialize()
             window = MainWindow(state)
             window.show()
             sys.exit(app.exec())

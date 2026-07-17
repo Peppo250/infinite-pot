@@ -1,7 +1,7 @@
 # ui/main_window.py
 import sys
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect
+from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.widgets.notifications import NotificationManager
@@ -157,32 +157,62 @@ class MainWindow(QMainWindow):
         self.partner_lbl.setStyleSheet("font-style: italic; color: #555555;")
         hud_layout.addWidget(self.partner_lbl, alignment=Qt.AlignRight)
 
+    def animate_switch(self, target_index: int):
+        if not hasattr(self, "stacked_opacity"):
+            self.stacked_opacity = QGraphicsOpacityEffect(self.stacked_widget)
+            self.stacked_widget.setGraphicsEffect(self.stacked_opacity)
+            
+        self.fade_out = QPropertyAnimation(self.stacked_opacity, b"opacity")
+        self.fade_out.setDuration(120)
+        self.fade_out.setStartValue(1.0)
+        self.fade_out.setEndValue(0.0)
+        self.fade_out.setEasingCurve(QEasingCurve.OutQuad)
+        
+        # When fade out completes, change screen and fade back in
+        def on_fade_out_done():
+            self.stacked_widget.setCurrentIndex(target_index)
+            self.fade_in = QPropertyAnimation(self.stacked_opacity, b"opacity")
+            self.fade_in.setDuration(120)
+            self.fade_in.setStartValue(0.0)
+            self.fade_in.setEndValue(1.0)
+            self.fade_in.setEasingCurve(QEasingCurve.InQuad)
+            self.fade_in.start()
+            
+        # Disconnect any previously bound signals to avoid duplicate executions
+        try:
+            self.fade_out.finished.disconnect()
+        except RuntimeError:
+            pass
+            
+        self.fade_out.finished.connect(on_fade_out_done)
+        self.fade_out.start()
+
     def show_main_menu(self):
         UIAudio.play_music("home")
         self.hud_bar.setVisible(False)
-        self.stacked_widget.setCurrentIndex(0)
+        self.animate_switch(0)
 
     def show_gameplay(self):
         UIAudio.play_music("hotel")
         self.hud_bar.setVisible(True)
         self.gameplay_screen.update_ui()
         self.update_hud()
-        self.stacked_widget.setCurrentIndex(1)
+        self.animate_switch(1)
 
     def show_business(self):
         UIAudio.play_music("hotel")
         self.business_screen.update_ui()
-        self.stacked_widget.setCurrentIndex(2)
+        self.animate_switch(2)
 
     def show_personal_life(self):
         UIAudio.play_music("romance")
         self.personal_life_screen.update_ui()
-        self.stacked_widget.setCurrentIndex(3)
+        self.animate_switch(3)
 
     def show_tavern(self):
         UIAudio.play_music("bar")
         self.tavern_screen.update_ui()
-        self.stacked_widget.setCurrentIndex(4)
+        self.animate_switch(4)
 
     def show_game_over(self):
         UIAudio.play_music("home")
@@ -191,7 +221,7 @@ class MainWindow(QMainWindow):
         r = self.state.restaurant
         rom = self.state.romance
         self.game_over_screen.set_results(self.victory, rom.partner_name, r.reputation, p.cash)
-        self.stacked_widget.setCurrentIndex(5)
+        self.animate_switch(5)
 
     def on_start_game(self):
         # Prompt for shop name

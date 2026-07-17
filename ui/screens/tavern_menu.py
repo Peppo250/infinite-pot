@@ -1,6 +1,6 @@
-# ui/screens/tavern_menu.py
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QListWidget, QListWidgetItem, QProgressBar
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QPixmap
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.dialogs.custom_dialogs import ConfirmDialog, ChoicesDialog
@@ -25,8 +25,14 @@ class TavernMenuScreen(QWidget):
         
         self.title = QLabel("Oakhaven Tavern", self)
         self.title.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
-        header_layout.addWidget(self.title, alignment=Qt.AlignRight)
         main_layout.addLayout(header_layout)
+        
+        # Tavern Pixel Art Banner
+        self.banner_img = QLabel(self)
+        self.banner_img.setStyleSheet(f"border: 4px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
+        pixmap = QPixmap("assets/images/tavern_bg.jpg")
+        self.banner_img.setPixmap(pixmap.scaled(960, 140, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation))
+        main_layout.addWidget(self.banner_img, alignment=Qt.AlignCenter)
         
         # Split layout
         split_layout = QHBoxLayout()
