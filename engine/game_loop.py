@@ -134,6 +134,8 @@ class GameLoop:
         input("\nPress Enter to start your journey...")
 
         while not self.game_over:
+            # Start business day music (hotel)
+            audio_manager.play_music("hotel")
             # 1. Start of Day Screen
             self.clear_screen()
             self.print_status()
@@ -520,7 +522,7 @@ class GameLoop:
             elif choice == "w" and partner and rom.is_co_owner and rom.wedding_tier == "None":
                 self.submenu_wedding()
             elif choice == "b":
-                audio_manager.play_music("home")
+                audio_manager.play_music("hotel")
                 break
 
     def submenu_wedding(self) -> None:
@@ -702,6 +704,7 @@ class GameLoop:
         input()
 
         # 3. Night phase / Overnight adjustments
+        audio_manager.play_music("home")
         audio_manager.play_sfx("coin")
         self.clear_screen()
         self.print_header("Overnight Ledger")
@@ -778,7 +781,7 @@ class GameLoop:
         input()
 
     def menu_bar(self) -> None:
-        audio_manager.play_music("hotel")
+        audio_manager.play_music("bar")
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
@@ -841,6 +844,7 @@ class GameLoop:
                 input("Press Enter...")
 
     def interact_bar_girl(self, girl: Any) -> None:
+        audio_manager.play_music("romance")
         p = self.state.player
         rom = self.state.romance
         h = self.state.house
@@ -867,6 +871,7 @@ class GameLoop:
             choice = input("\nSelect: ").strip().lower()
             audio_manager.play_sfx("select")
             if choice == 'b':
+                audio_manager.play_music("bar")
                 break
             elif choice == '1':
                 if p.energy < 10:
@@ -926,6 +931,7 @@ class GameLoop:
                 if confirm == 'y':
                     success, msg = rom.break_up()
                     print(Fore.GREEN + msg)
+                    audio_manager.play_music("bar")
                     break
 
     def interact_bar_candidate(self, candidate: Any) -> None:
