@@ -351,7 +351,7 @@ class BusinessMenuScreen(QWidget):
             
         # 2. Update Staffing Tab Info
         max_emp = r.current_config.max_employees
-        self.staff_summary.setText(f"Hired Staff: {len(es.hired)}/{max_emp} | Total Salary: ${es.calculate_daily_payroll():.2f}/day")
+        self.staff_summary.setText(f"Hired Staff: {len(es.hired)}/{max_emp} | Total Salary: ${es.calculate_daily_wages():.2f}/day")
         self.staff_list.clear()
         for emp in es.hired:
             item = QListWidgetItem(self.staff_list)
