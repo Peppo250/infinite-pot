@@ -1,0 +1,166 @@
+{
+  "player": {
+    "starting_cash": 100.0,
+    "starting_energy": 100.0,
+    "daily_energy_cost": 20.0,
+    "work_energy_cost_per_hour": 5.0,
+    "sleep_energy_recovery": 80.0
+  },
+  "restaurant_levels": {
+    "1": {
+      "name": "Roadside Cart",
+      "upgrade_cost": 0.0,
+      "daily_maintenance": 5.0,
+      "customer_capacity": 15,
+      "max_employees": 0,
+      "price_per_meal_range": [3.0, 6.0],
+      "base_attraction": 0.3
+    },
+    "2": {
+      "name": "Edge-of-Town Shop",
+      "upgrade_cost": 250.0,
+      "daily_maintenance": 20.0,
+      "customer_capacity": 35,
+      "max_employees": 1,
+      "price_per_meal_range": [5.0, 10.0],
+      "base_attraction": 0.5
+    },
+    "3": {
+      "name": "Town Restaurant",
+      "upgrade_cost": 1200.0,
+      "daily_maintenance": 80.0,
+      "customer_capacity": 80,
+      "max_employees": 3,
+      "price_per_meal_range": [10.0, 22.0],
+      "base_attraction": 0.75
+    }
+  },
+  "upgrades": {
+    "business": [
+      {
+        "id": "neon_sign",
+        "name": "Neon Sign",
+        "cost": 150.0,
+        "attraction_bonus": 0.05,
+        "daily_maintenance": 2.0,
+        "min_level": 2,
+        "description": "A flashy neon sign that draws in late-night passersby."
+      },
+      {
+        "id": "comfy_chairs",
+        "name": "Comfortable Chairs",
+        "cost": 300.0,
+        "attraction_bonus": 0.08,
+        "daily_maintenance": 4.0,
+        "min_level": 2,
+        "description": "Higher quality seating that keeps customers comfortable and happy."
+      },
+      {
+        "id": "background_music",
+        "name": "Live Acoustic Setup",
+        "cost": 500.0,
+        "attraction_bonus": 0.12,
+        "daily_maintenance": 10.0,
+        "min_level": 3,
+        "description": "Hires a local musician or plays soft jazz to elevate the atmosphere."
+      },
+      {
+        "id": "fancy_pot_stand",
+        "name": "Gilded Pot Stand",
+        "cost": 800.0,
+        "attraction_bonus": 0.18,
+        "daily_maintenance": 5.0,
+        "min_level": 3,
+        "description": "Showcase your magical pot on a majestic gilded stand, sparking curiosity."
+      }
+    ],
+    "house": [
+      {
+        "id": "cozy_couch",
+        "name": "Cozy Couch",
+        "cost": 400.0,
+        "energy_recovery_bonus": 10.0,
+        "romance_progress_bonus": 0.0,
+        "description": "A plush couch that lets you rest more deeply at the end of the day."
+      },
+      {
+        "id": "nice_dining_table",
+        "name": "Mahogany Dining Table",
+        "cost": 600.0,
+        "energy_recovery_bonus": 0.0,
+        "romance_progress_bonus": 0.15,
+        "description": "Perfect for hosting candlelit dinners at home to deepen relationships."
+      },
+      {
+        "id": "indoor_garden",
+        "name": "Indoor Greenery",
+        "cost": 800.0,
+        "energy_recovery_bonus": 5.0,
+        "romance_progress_bonus": 0.10,
+        "description": "Lush houseplants that bring serenity to your living room."
+      }
+    ]
+  },
+  "house_purchase": {
+    "cost": 3000.0,
+    "daily_maintenance": 25.0,
+    "description": "A charming cottage on the edge of town, symbol of a stable personal life."
+  },
+  "loans": {
+    "max_loan_ratio": 0.5,
+    "annual_interest_rate": 0.15,
+    "minimum_payment_percentage": 0.05
+  },
+  "employee_pool": [
+    {
+      "name": "Alex",
+      "skill": 0.4,
+      "reliability": 0.8,
+      "experience": 1,
+      "daily_salary": 25.0
+    },
+    {
+      "name": "Jordan",
+      "skill": 0.6,
+      "reliability": 0.9,
+      "experience": 2,
+      "daily_salary": 45.0
+    },
+    {
+      "name": "Taylor",
+      "skill": 0.8,
+      "reliability": 0.7,
+      "experience": 3,
+      "daily_salary": 65.0
+    },
+    {
+      "name": "Morgan",
+      "skill": 0.9,
+      "reliability": 0.95,
+      "experience": 5,
+      "daily_salary": 100.0
+    }
+  ],
+  "romance": {
+    "date_cost": 80.0,
+    "romance_level_milestones": [0, 25, 50, 75, 100],
+    "partner_name": "Valerie",
+    "partner_occupation": "Local Florist",
+    "relationship_stages": [
+      "Stranger",
+      "Acquaintance",
+      "Close Friend",
+      "Partner",
+      "Partner & Business Co-Owner"
+    ],
+    "energy_cost_for_date": 25.0
+  },
+  "competitor": {
+    "name": "Bistro Gourmet",
+    "owner": "Chef Sebastian",
+    "base_marketing_budget": 50.0,
+    "base_market_share_drain": 0.15,
+    "marketing_counteraction_cost": 40.0,
+    "reputation_impact_factor": 0.2
+  }
+}
