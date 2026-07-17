@@ -158,9 +158,8 @@ class MainWindow(QMainWindow):
         hud_layout.addWidget(self.partner_lbl, alignment=Qt.AlignRight)
 
     def animate_switch(self, target_index: int):
-        if not hasattr(self, "stacked_opacity"):
-            self.stacked_opacity = QGraphicsOpacityEffect(self.stacked_widget)
-            self.stacked_widget.setGraphicsEffect(self.stacked_opacity)
+        self.stacked_opacity = QGraphicsOpacityEffect(self.stacked_widget)
+        self.stacked_widget.setGraphicsEffect(self.stacked_opacity)
             
         self.fade_out = QPropertyAnimation(self.stacked_opacity, b"opacity")
         self.fade_out.setDuration(120)
@@ -176,6 +175,12 @@ class MainWindow(QMainWindow):
             self.fade_in.setStartValue(0.0)
             self.fade_in.setEndValue(1.0)
             self.fade_in.setEasingCurve(QEasingCurve.InQuad)
+            
+            # Remove graphics effect on fade in complete to ensure click interactions work perfectly!
+            def on_fade_in_done():
+                self.stacked_widget.setGraphicsEffect(None)
+                
+            self.fade_in.finished.connect(on_fade_in_done)
             self.fade_in.start()
             
         # Disconnect any previously bound signals to avoid duplicate executions

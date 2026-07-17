@@ -61,6 +61,7 @@ class NotificationManager(QWidget):
         super().__init__(parent)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_NoSystemBackground)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
         
         self.layout = QVBoxLayout(self)
         self.layout.setAlignment(Qt.AlignTop | Qt.AlignRight)
