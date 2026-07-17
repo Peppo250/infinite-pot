@@ -277,3 +277,49 @@ def test_scaling_and_sleep_recovery() -> None:
     state.house.purchased = True
     state.advance_day()
     assert state.player.energy == 100.0
+
+def test_high_end_upgrades_and_wedding() -> None:
+    # Setup test game state
+    state = GameState()
+    
+    # 1. Test Super-Cooker capacity increase
+    r = state.restaurant
+    base_cap = r.customer_capacity
+    r.upgrades.append("super_cooker")
+    assert r.customer_capacity == base_cap + 30
+    
+    # 2. Test Sebastian's Recipes price range max increase
+    min_p, max_p = r.price_per_meal_range
+    r.upgrades.append("sebastian_recipes")
+    assert r.price_per_meal_range[1] == max_p + 5.0
+    
+    # 3. Test Engagement Ring Proposal requirement
+    rom = state.romance
+    target = rom.characters[0]
+    rom.active_partner_name = target.name
+    target.romance_level = 80.0
+    
+    # Marriage proposal fails without a ring
+    rom.has_ring = False
+    success, msg = rom.ask_to_co_own(has_house=True)
+    assert success is False
+    
+    # Proposal succeeds with a ring
+    rom.has_ring = True
+    success, msg = rom.ask_to_co_own(has_house=True)
+    assert success is True
+    assert rom.is_co_owner is True
+    
+    # 4. Test Wedding Ceremony attributes
+    assert rom.wedding_tier == "None"
+    rom.wedding_tier = "Royal"
+    r.adjust_reputation(60.0)
+    assert rom.wedding_tier == "Royal"
+    assert r.reputation >= 60.0
+
+def test_ui_theme_manager() -> None:
+    from ui.theme import ThemeManager
+    stylesheet = ThemeManager.get_style_sheet()
+    assert ThemeManager.CREAM in stylesheet
+    assert ThemeManager.DARK_BROWN in stylesheet
+    assert ThemeManager.GOLD_MONEY in stylesheet
