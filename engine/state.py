@@ -84,61 +84,77 @@ class GameState:
         Updates player cash, energy, and restaurant reputation.
         Returns a dictionary summarizing the day's results.
         """
+        p = self.romance.partner
+        active_employees = self.employees.get_active_employees()
+        
+        # Determine if partner helps in the shop today
+        partner_helps_today = False
+        if p:
+            if p.is_co_owner:
+                partner_helps_today = True
+            elif p.is_partner and (self.day_name in p.schedule):
+                partner_helps_today = True
+                
         # 1. Determine customer attraction
-        partner_boost = 0.0
-        if self.romance.partner and self.romance.partner.is_partner:
-            partner_boost = self.romance.partner.attraction_boost
-            
+        partner_boost = p.attraction_boost if partner_helps_today else 0.0
         drain = self.competitor.get_attraction_drain()
         attraction = self.restaurant.calculate_attraction(competitor_impact=drain) + partner_boost
         
-        # 2. Determine potential customers
+        # Determine total open hours for the day
+        open_hours = player_work_hours
+        if len(active_employees) > 0 or partner_helps_today:
+            # Hired staff or partner working forces the shop open for at least a standard 8-hour shift
+            open_hours = max(player_work_hours, 8)
+            
+        # Special case: if level < 3 (no hired employees) and partner is not helping, and player works 0 hours, the business is closed!
+        if self.restaurant.level < 3 and not partner_helps_today and player_work_hours == 0:
+            open_hours = 0
+        
+        # 2. Determine potential customers (scales proportionally with open hours)
         capacity = self.restaurant.current_config.customer_capacity
         multiplier = self.town.economic_multiplier
         random_factor = random.uniform(0.85, 1.15)
-        potential_customers = int(capacity * attraction * multiplier * random_factor)
         
-        # Ensure at least 1 potential customer if attraction is positive
-        if potential_customers < 1 and attraction > 0:
-            potential_customers = 1
+        if open_hours > 0:
+            hourly_rate = (capacity / 8.0) * attraction * multiplier
+            potential_customers = int(hourly_rate * open_hours * random_factor)
+            if potential_customers < 1 and attraction > 0:
+                potential_customers = 1
+        else:
+            potential_customers = 0
             
         # 3. Calculate player energy cost & capacity
         player_capacity = player_work_hours * 3
         player_energy_cost = player_work_hours * self.player.work_energy_cost_per_hour
         self.player.adjust_energy(-player_energy_cost)
         
-        # 4. Calculate employees capacity
-        active_employees = self.employees.get_active_employees()
-        employee_capacity = sum(int(8 * (2 + e.skill * 4)) for e in active_employees)
+        # 4. Calculate employees capacity (they work up to min(8, open_hours))
+        employee_capacity = sum(int(min(8, open_hours) * (2 + e.skill * 4)) for e in active_employees)
         
-        # 5. Calculate partner's capacity (if co-owner)
-        partner_capacity = 32 if self.romance.is_co_owner else 0
+        # 5. Calculate partner's capacity (helps serve up to min(8, open_hours) hours, 4 meals/hour)
+        partner_capacity = min(8, open_hours) * 4 if partner_helps_today else 0
         
         # 6. Total service capacity
         total_capacity = player_capacity + employee_capacity + partner_capacity
         
-        # Special case: if level < 3 (no employees) and player works 0 hours, the business is closed!
-        if self.restaurant.level < 3 and player_work_hours == 0:
-            total_capacity = 0
-            
-        # 7. Actual customers served
-        actual_served = min(potential_customers, total_capacity, capacity)
+        # 7. Actual customers served (capped by seats available throughout the open hours)
+        max_daily_capacity = int(capacity * (open_hours / 8.0)) if open_hours > 0 else 0
+        actual_served = min(potential_customers, total_capacity, max_daily_capacity)
         turned_away = max(0, potential_customers - total_capacity)
         
         # 8. Revenue & Tips calculation
         revenue = round(actual_served * self.restaurant.menu_price, 2)
         
         # Calculate worker quality for tips and reputation
-        workers_count = (1 if player_work_hours > 0 else 0) + len(active_employees) + (1 if self.romance.is_co_owner else 0)
+        workers_count = (1 if player_work_hours > 0 else 0) + len(active_employees) + (1 if partner_helps_today else 0)
         if workers_count > 0:
-            skills_sum = (0.5 if player_work_hours > 0 else 0.0) + sum(e.skill for e in active_employees) + (0.8 if self.romance.is_co_owner else 0.0)
+            skills_sum = (0.5 if player_work_hours > 0 else 0.0) + sum(e.skill for e in active_employees) + (0.8 if partner_helps_today else 0.0)
             avg_skill = skills_sum / workers_count
         else:
             avg_skill = 0.3  # poor self-service or closed
             
         tips = 0.0
         if actual_served > 0 and workers_count > 0:
-            # tips scale with reputation and worker skills
             tip_rate = random.uniform(0.0, 1.5) * (self.restaurant.reputation / 100.0) * avg_skill
             tips = round(actual_served * tip_rate, 2)
             
@@ -155,17 +171,15 @@ class GameState:
         if tips > 0:
             self.finance.record_transaction("Revenue", tips, f"Received tips from {actual_served} customers")
             
-        # 9. Reputation adjustments
+        # 9. Reputation adjustments (reverted to old rate)
         rep_change = 0.0
         if actual_served > 0:
-            # Good service skill increases rep (improved rate)
-            rep_change += 0.15 * actual_served * (avg_skill - 0.3)
+            # Good service skill increases rep
+            rep_change += 0.03 * actual_served * (avg_skill - 0.4)
             
-            # Fair pricing bonus
+            # Pricing impact
             max_p = self.restaurant.current_config.price_per_meal_range[1]
-            if self.restaurant.menu_price <= max_p:
-                rep_change += 0.05 * actual_served
-            else:
+            if self.restaurant.menu_price > max_p:
                 overprice = self.restaurant.menu_price - max_p
                 rep_change -= 0.6 * overprice * actual_served
         
@@ -236,8 +250,14 @@ class GameState:
             notifications.append(f"Bank Loan: Daily interest of ${interest:.2f} was added to your balance.")
 
         # 3. Rest Player (energy recovery)
-        couch_bonus = self.house.get_energy_recovery_bonus()
-        self.player.recover_sleep(bonus=couch_bonus)
+        if self.house.purchased:
+            # Sleeping at home fully replenishes energy
+            self.player.energy = self.player.max_energy
+            notifications.append("You slept in your cozy home. Energy fully restored to 100%!")
+        else:
+            # Sleeping in the shop restores a base amount
+            self.player.recover_sleep(bonus=0.0)
+            notifications.append("You slept on a makeshift cot in the shop. Energy partially restored.")
         
         # 4. Economic Climate & Competitor Updates
         econ_msg = self.town.roll_economic_climate()

@@ -244,3 +244,33 @@ def test_game_state_sim() -> None:
     assert state.day == 2
     # Verify maintenance deduction is $0.00
     assert state.player.cash == initial_cash
+
+def test_scaling_and_sleep_recovery() -> None:
+    # 1. Setup game state
+    state = GameState()
+    state.town.economic_multiplier = 1.0
+    
+    # Open 2 hours vs 8 hours. Potential customers scale with open hours.
+    sim_short = state.simulate_business_day(player_work_hours=2)
+    p_short = sim_short["potential_customers"]
+    
+    state_long = GameState()
+    state_long.town.economic_multiplier = 1.0
+    sim_long = state_long.simulate_business_day(player_work_hours=8)
+    p_long = sim_long["potential_customers"]
+    
+    assert p_long > p_short
+    
+    # 2. Test energy sleep dynamics
+    # Case A: Sleep in shop (no house)
+    state.player.energy = 10.0
+    state.house.purchased = False
+    state.advance_day()
+    # 10 - 15 + 75 = 70
+    assert state.player.energy == 70.0
+    
+    # Case B: Sleep at home (house purchased)
+    state.player.energy = 10.0
+    state.house.purchased = True
+    state.advance_day()
+    assert state.player.energy == 100.0

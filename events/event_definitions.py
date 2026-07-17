@@ -277,27 +277,168 @@ def get_default_events() -> list[GameEvent]:
     def push_through_action(state):
         state.player.adjust_energy(-10)
 
+    # 8. Competitor Sabotage (Official Bribe)
+    def sabotage_fee_action(state):
+        state.player.adjust_cash(-150)
+        state.finance.record_transaction("Misc", -150, "Paid official bribe compliance fee")
+        
+    def sabotage_inspection_action(state):
+        state.restaurant.adjust_reputation(10)
+        state.competitor.counter_marketing_active = True
+
+    def sabotage_refuse_action(state):
+        state.restaurant.adjust_reputation(-10)
+        state.player.adjust_cash(-100)
+        state.finance.record_transaction("Misc", -100, "Official licensing fine")
+
     events.append(GameEvent(
-        id="burnout_warning",
-        title="Exhaustion",
+        id="competitor_sabotage",
+        title="Official Sabotage",
         description=(
-            "You wake up with a pounding headache and heavy limbs. You've been working "
-            "non-stop. Your body is begging for a break. You ask yourself: 'What am I actually working for?'"
+            "An auditor from the town council arrives. They claim Chef Sebastian filed a formal complaint "
+            "alleging your operations run without proper local safety certificates. The official hints a "
+            "payment could speed up compliance."
         ),
         options=[
             EventOption(
-                text="Take a half-day off and get a massage (-$30, +50 Energy)",
-                outcome_text="You treat yourself to some self-care. Your muscles relax and your mind clears. (+50 Energy, -$30)",
-                action=rest_choice_action,
-                condition=lambda state: state.player.cash >= 30
+                text="Pay the official a 'compliance fee' (-$150)",
+                outcome_text="You pay the fee. They sign off on your licenses and leave. (-$150)",
+                action=sabotage_fee_action,
+                condition=lambda state: state.player.cash >= 150
             ),
             EventOption(
-                text="Push through the pain (-10 Energy)",
-                outcome_text="You force yourself out of bed. Everything hurts, and you are operating on fumes. (-10 Energy)",
-                action=push_through_action
+                text="Demand a public sanitation review (Requires >=65 Reputation, +10 Reputation)",
+                outcome_text="The public review is a massive success! Your pot is spotless, and Sebastian's complaints look like petty jealousy. (+10 Reputation, competitor impact minimized today)",
+                action=sabotage_inspection_action,
+                condition=lambda state: state.restaurant.reputation >= 65
+            ),
+            EventOption(
+                text="Argue and refuse to pay (-$100, -10 Reputation)",
+                outcome_text="You refuse to pay. The official fines you for 'delayed certification access' and files a bad report. (-$100, -10 Reputation)",
+                action=sabotage_refuse_action,
+                condition=lambda state: state.player.cash >= 100
             )
         ],
-        trigger_condition=lambda state: state.player.energy < 20
+        trigger_condition=lambda state: state.competitor.is_active
+    ))
+
+    # 9. Autumn Festival Sponsorship
+    def festival_gold_action(state):
+        state.player.adjust_cash(-200)
+        state.restaurant.adjust_reputation(15)
+        state.finance.record_transaction("Marketing", -200, "Sponsored Autumn Festival")
+        
+    def festival_volunteer_action(state):
+        state.player.adjust_energy(-30)
+        state.restaurant.adjust_reputation(8)
+        state.finance.record_transaction("Misc", 0, "Fed volunteers (Energy cost)")
+
+    def festival_decline_action(state):
+        pass
+
+    events.append(GameEvent(
+        id="autumn_festival",
+        title="Festival Sponsorship",
+        description=(
+            "The Oakhaven Autumn Festival committee approaches you. They want to know if you'd like to "
+            "sponsor this year's harvest event to display your brand name in Oakhaven square."
+        ),
+        options=[
+            EventOption(
+                text="Become a Gold Sponsor (-$200, +15 Reputation)",
+                outcome_text="You sponsor the event! A large banner is raised in Oakhaven square. (+15 Reputation, -$200)",
+                action=festival_gold_action,
+                condition=lambda state: state.player.cash >= 200
+            ),
+            EventOption(
+                text="Volunteer to feed the setup crew (Costs 30 Energy, +8 Reputation)",
+                outcome_text="You work all morning cooking and feeding the crew. The organizers thank you warmly. (+8 Reputation, -30 Energy)",
+                action=festival_volunteer_action,
+                condition=lambda state: state.player.energy >= 30
+            ),
+            EventOption(
+                text="Politely decline",
+                outcome_text="You decline sponsorship. The committee moves on to other businesses. (No change)",
+                action=festival_decline_action
+            )
+        ],
+        trigger_condition=lambda state: state.restaurant.level >= 3
+    ))
+
+    # 10. Relationship Anniversary
+    def anniversary_gift_action(state):
+        state.player.adjust_cash(-100)
+        state.romance.romance_level = min(100.0, state.romance.romance_level + 20)
+        state.finance.record_transaction("Date", -100, "Anniversary Gift")
+
+    def anniversary_poem_action(state):
+        state.player.adjust_energy(-30)
+        state.romance.romance_level = min(100.0, state.romance.romance_level + 12)
+        state.finance.record_transaction("Date", 0, "Heartfelt poem (Energy cost)")
+
+    def anniversary_forget_action(state):
+        state.romance.romance_level = max(0.0, state.romance.romance_level - 20)
+
+    events.append(GameEvent(
+        id="anniversary",
+        title="Relationship Anniversary",
+        description=(
+            "Today is your relationship anniversary! Your partner expects a meaningful gesture to "
+            "celebrate your time together."
+        ),
+        options=[
+            EventOption(
+                text="Buy a luxury gift basket & dinner (-$100, +20 Romance)",
+                outcome_text="You spend the evening dining. She is thrilled and touched by the gift. (+20 Romance, -$100)",
+                action=anniversary_gift_action,
+                condition=lambda state: state.player.cash >= 100
+            ),
+            EventOption(
+                text="Write her a heartfelt love poem (Costs 30 Energy, +12 Romance)",
+                outcome_text="You recite the poem you spent all night writing. She finds it incredibly sweet and romantic. (+12 Romance, -30 Energy)",
+                action=anniversary_poem_action,
+                condition=lambda state: state.player.energy >= 30
+            ),
+            EventOption(
+                text="Forget it and work late (--Romance)",
+                outcome_text="You forgot! She spends the evening quiet and hurt. (-20 Romance)",
+                action=anniversary_forget_action
+            )
+        ],
+        trigger_condition=lambda state: state.romance.partner is not None and state.romance.partner.is_partner
+    ))
+
+    # 11. The Scholar's Inquiry
+    def scholar_accept_action(state):
+        state.player.adjust_cash(400)
+        state.player.adjust_energy(-30)
+        state.restaurant.adjust_reputation(-8)
+        state.finance.record_transaction("Misc", 400, "Scholar research grant")
+
+    def scholar_refuse_action(state):
+        pass
+
+    events.append(GameEvent(
+        id="scholar_pot_inquiry",
+        title="The Scholar's Inquiry",
+        description=(
+            "A traveling scholar from the Capital Academy visits your shop. They offer you $400 "
+            "to analyze your magical pot for a research journal on anomalous physics."
+        ),
+        options=[
+            EventOption(
+                text="Allow the study (Costs 30 Energy, +$400, -8 Reputation)",
+                outcome_text="They run measurements on the pot. Customers are suspicious of the scientific gear, but the scholar pays you handsomely. (+$400, -8 Reputation, -30 Energy)",
+                action=scholar_accept_action,
+                condition=lambda state: state.player.energy >= 30
+            ),
+            EventOption(
+                text="Refuse the inquiry",
+                outcome_text="You decline. The scholar leaves disappointed. The mystery of your magical pot remains secure. (No change)",
+                action=scholar_refuse_action
+            )
+        ],
+        trigger_condition=lambda state: state.restaurant.level >= 2
     ))
 
     return events

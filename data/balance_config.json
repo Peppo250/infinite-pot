@@ -4,52 +4,52 @@
     "starting_energy": 100.0,
     "daily_energy_cost": 15.0,
     "work_energy_cost_per_hour": 5.0,
-    "sleep_energy_recovery": 80.0
+    "sleep_energy_recovery": 75.0
   },
   "restaurant_levels": {
     "0": {
       "name": "Street Peddler (Magical Pot Only)",
       "upgrade_cost": 0.0,
       "daily_maintenance": 0.0,
-      "customer_capacity": 6,
+      "customer_capacity": 12,
       "max_employees": 0,
-      "price_per_meal_range": [1.5, 3.0],
-      "base_attraction": 0.2
+      "price_per_meal_range": [2.5, 4.0],
+      "base_attraction": 0.5
     },
     "1": {
       "name": "Second-Hand Roadside Cart",
       "upgrade_cost": 100.0,
-      "daily_maintenance": 2.0,
-      "customer_capacity": 15,
+      "daily_maintenance": 5.0,
+      "customer_capacity": 20,
       "max_employees": 0,
-      "price_per_meal_range": [2.5, 5.0],
-      "base_attraction": 0.35
+      "price_per_meal_range": [3.5, 6.0],
+      "base_attraction": 0.55
     },
     "2": {
       "name": "Own Roadside Cart",
-      "upgrade_cost": 250.0,
-      "daily_maintenance": 8.0,
-      "customer_capacity": 28,
+      "upgrade_cost": 300.0,
+      "daily_maintenance": 25.0,
+      "customer_capacity": 32,
       "max_employees": 0,
-      "price_per_meal_range": [4.0, 8.0],
-      "base_attraction": 0.5
+      "price_per_meal_range": [5.0, 9.0],
+      "base_attraction": 0.6
     },
     "3": {
       "name": "Edge-of-Town Shop",
-      "upgrade_cost": 800.0,
-      "daily_maintenance": 25.0,
-      "customer_capacity": 45,
+      "upgrade_cost": 900.0,
+      "daily_maintenance": 80.0,
+      "customer_capacity": 50,
       "max_employees": 1,
-      "price_per_meal_range": [6.0, 12.0],
-      "base_attraction": 0.65
+      "price_per_meal_range": [8.0, 14.0],
+      "base_attraction": 0.7
     },
     "4": {
       "name": "Town Restaurant",
-      "upgrade_cost": 2000.0,
-      "daily_maintenance": 90.0,
-      "customer_capacity": 85,
+      "upgrade_cost": 2500.0,
+      "daily_maintenance": 220.0,
+      "customer_capacity": 90,
       "max_employees": 3,
-      "price_per_meal_range": [10.0, 24.0],
+      "price_per_meal_range": [12.0, 26.0],
       "base_attraction": 0.8
     }
   },
@@ -120,8 +120,8 @@
     ]
   },
   "house_purchase": {
-    "cost": 3000.0,
-    "daily_maintenance": 25.0,
+    "cost": 4000.0,
+    "daily_maintenance": 45.0,
     "description": "A charming cottage on the edge of town, symbol of a stable personal life."
   },
   "loans": {
@@ -160,7 +160,7 @@
     }
   ],
   "romance": {
-    "date_cost": 80.0,
+    "date_cost": 100.0,
     "romance_level_milestones": [0, 25, 50, 75, 100],
     "partner_name": "Valerie",
     "partner_occupation": "Local Florist",

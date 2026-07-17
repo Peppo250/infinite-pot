@@ -104,11 +104,11 @@ class GameLoop:
             print(f"  [ ] Save {Fore.GREEN}$800.00{Fore.RESET} to upgrade to an Edge-of-Town Shop (Current: ${s.player.cash:.2f})")
             print("  [ ] Build up capital with your first proper cart.")
         elif r.level == 3:
-            print(f"  [ ] Save {Fore.GREEN}$2000.00{Fore.RESET} to upgrade to a Town Restaurant (Current: ${s.player.cash:.2f})")
-            print("  [ ] Optionally hire an employee to help with the rising shop workload.")
+            print(f"  [ ] Save {Fore.GREEN}$2500.00{Fore.RESET} to upgrade to a Town Restaurant (Current: ${s.player.cash:.2f})")
+            print("  [ ] Visit the Tavern in the evening to socialize, meet people, and hire staff.")
         elif r.level == 4 and not h.purchased:
-            print(f"  [ ] Save {Fore.GREEN}$3000.00{Fore.RESET} to purchase your first House (Current: ${s.player.cash:.2f})")
-            print(f"  [ ] Visit the Tavern in the evening to socialize and find a partner.")
+            print(f"  [ ] Save {Fore.GREEN}$4000.00{Fore.RESET} to purchase your first House (Current: ${s.player.cash:.2f})")
+            print(f"  [ ] Go on dates with {rom.partner_name} to build romance!")
         elif r.level == 4 and h.purchased and not rom.is_co_owner:
             print(f"  [ ] Build relationship with {rom.partner_name} to 'Partner' stage (Romance >= 75)")
             print(f"  [ ] Ask {rom.partner_name} to move in and co-own the business (Requires Romance >= 75)")
@@ -159,7 +159,7 @@ class GameLoop:
             # 3. Main Menu choices
             print("What would you like to do this morning?")
             print("1. Manage Business (Pricing, Upgrades, Staff, Loans)")
-            if self.state.restaurant.level >= 4:
+            if self.state.restaurant.level >= 3:
                 print("2. Personal Life (Dating, House upgrades)")
             print("3. Open Restaurant for the day")
             print("Q. Quit Prototype")
@@ -168,7 +168,7 @@ class GameLoop:
 
             if choice == "1":
                 self.menu_manage_business()
-            elif choice == "2" and self.state.restaurant.level >= 4:
+            elif choice == "2" and self.state.restaurant.level >= 3:
                 self.menu_personal_life()
             elif choice == "3":
                 self.run_business_day()
@@ -419,10 +419,7 @@ class GameLoop:
             print("-" * 50)
             
             if partner:
-                if h.purchased:
-                    print(f"1. Go on a Date with {partner.name} (Costs $80.00, 25 Energy)")
-                else:
-                    print(Fore.WHITE + "1. Go on a Date (Requires a House to host date nights)")
+                print(f"1. Go on a Date with {partner.name} (Costs $100.00, 25 Energy)")
             
             if not h.purchased:
                 print(f"2. Purchase a House (-${h.cost:.2f})")
@@ -440,10 +437,6 @@ class GameLoop:
 
             choice = input("\nSelect: ").strip().lower()
             if choice == "1" and partner:
-                if not h.purchased:
-                    print(Fore.RED + "You need a house of your own before hosting date nights!")
-                    input("\nPress Enter to continue...")
-                    continue
                 mult = 1.0 + h.get_romance_progress_bonus()
                 success, msg, cash_spent, energy_spent = rom.go_on_date(p.cash, p.energy, progress_multiplier=mult)
                 if success:
@@ -603,24 +596,22 @@ class GameLoop:
             print(f"Available Cash: ${p.cash:.2f} | Energy: {p.energy:.1f}/{p.max_energy}")
             print("-" * 50)
             print("What would you like to do tonight?")
-            print("1. Visit the local Tavern (Costs 15 Energy - socialize & recruit)")
+            if self.state.restaurant.level >= 3:
+                print("1. Visit the local Tavern (Costs 15 Energy - socialize & recruit)")
             if h.purchased:
-                print("2. Rest at home (+15 Energy, costs $0)")
-            print("3. Go to sleep (End day and advance to next morning)")
+                print("2. Rest & Sleep at home (Fully restores energy to 100%)")
+            else:
+                print("2. Sleep in the shop (Partially restores energy)")
             
             opt = input("\nSelect: ").strip()
-            if opt == '1':
+            if opt == '1' and self.state.restaurant.level >= 3:
                 if p.energy < 15:
                     print(Fore.RED + "You are too exhausted to go out tonight!")
                     input("\nPress Enter...")
                 else:
                     p.adjust_energy(-15)
                     self.menu_bar()
-            elif opt == '2' and h.purchased:
-                p.adjust_energy(15.0)
-                print(Fore.GREEN + "You spent a relaxing evening at home. (+15 Energy)")
-                input("\nPress Enter...")
-            elif opt == '3':
+            elif opt == '2':
                 break
             else:
                 print(Fore.RED + "Invalid choice.")
