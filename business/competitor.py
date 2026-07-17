@@ -31,8 +31,8 @@ class CompetitorSystem:
         if self.is_active:
             return False
         
-        # Unlocks when player has level 3 restaurant, a partner (relationship level >= 3), and a house
-        if restaurant_level >= 3 and has_partner and has_house:
+        # Unlocks when player has level 4 restaurant, a partner (relationship level >= 3), and a house
+        if restaurant_level >= 4 and has_partner and has_house:
             self.is_active = True
             return True
         return False

@@ -18,11 +18,13 @@ class LoanSystem:
 
     def get_max_borrow_limit(self, restaurant_level: int) -> float:
         """Returns the maximum debt the player can carry based on restaurant level."""
-        # Level 1 (Roadside Cart): Max loan $150
-        # Level 2 (Edge-of-Town Shop): Max loan $600
-        # Level 3 (Town Restaurant): Max loan $2500
-        limits = {1: 150.0, 2: 600.0, 3: 2500.0}
-        return limits.get(restaurant_level, 100.0)
+        # Level 0 (Street Peddler): Max loan $0
+        # Level 1 (Second-Hand Cart): Max loan $50
+        # Level 2 (Own Cart): Max loan $200
+        # Level 3 (Edge-of-Town Shop): Max loan $800
+        # Level 4 (Town Restaurant): Max loan $2500
+        limits = {0: 0.0, 1: 50.0, 2: 200.0, 3: 800.0, 4: 2500.0}
+        return limits.get(restaurant_level, 0.0)
 
     def get_available_borrow_amount(self, restaurant_level: int) -> float:
         """Returns how much more the player can borrow."""

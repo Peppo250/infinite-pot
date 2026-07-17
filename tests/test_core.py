@@ -128,25 +128,25 @@ def test_loans() -> None:
     l = LoanSystem.from_config(config)
     assert l.balance == 0.0
     
-    # Borrow at level 1 (limit 150)
-    success, msg = l.borrow(100.0, 1)
+    # Borrow at level 1 (limit 50)
+    success, msg = l.borrow(40.0, 1)
     assert success is True
-    assert l.balance == 100.0
+    assert l.balance == 40.0
     
-    # Borrow over limit
-    success, msg = l.borrow(60.0, 1)
+    # Borrow over limit (40 + 20 = 60, exceeds 50)
+    success, msg = l.borrow(20.0, 1)
     assert success is False
     
-    # Apply interest (annual 0.365 / 365 = 0.001 daily -> 0.1% interest on 100 = 0.10)
+    # Apply interest (annual 0.365 / 365 = 0.001 daily -> 0.1% interest on 40 = 0.04)
     interest = l.apply_daily_interest()
-    assert round(interest, 2) == 0.10
-    assert round(l.balance, 2) == 100.10
+    assert round(interest, 2) == 0.04
+    assert round(l.balance, 2) == 40.04
     
     # Repay loan
-    success, msg, spent = l.pay_loan(50.10, 100.0)
+    success, msg, spent = l.pay_loan(20.04, 100.0)
     assert success is True
-    assert spent == 50.10
-    assert round(l.balance, 2) == 50.00
+    assert spent == 20.04
+    assert round(l.balance, 2) == 20.00
 
 def test_employees() -> None:
     config = {
@@ -211,9 +211,9 @@ def test_restaurant_logic() -> None:
 def test_game_state_sim() -> None:
     # Verifies game loop simulation run and day advance transitions
     state = GameState()
-    # At start, player has 100 cash, energy 100, level 1 restaurant
-    assert state.player.cash == 100.0
-    assert state.restaurant.level == 1
+    # At start, player has 0 cash, energy 100, level 0 restaurant
+    assert state.player.cash == 0.0
+    assert state.restaurant.level == 0
     
     # Run a business day where player works 4 hours
     sim = state.simulate_business_day(player_work_hours=4)
@@ -222,9 +222,9 @@ def test_game_state_sim() -> None:
     assert state.player.days_worked == 1
     
     # Advance the day
-    # Deducts daily cart maintenance ($5.00)
+    # Deducts daily cart maintenance for Level 0 ($0.00)
     initial_cash = state.player.cash
     notices = state.advance_day()
     assert state.day == 2
-    # Verify maintenance deduction
-    assert state.player.cash == initial_cash - 5.0
+    # Verify maintenance deduction is $0.00
+    assert state.player.cash == initial_cash

@@ -24,9 +24,9 @@ class RestaurantLevelConfig:
 
 @dataclass
 class Restaurant:
-    level: int = 1
+    level: int = 0
     reputation: float = 20.0  # 0 to 100
-    menu_price: float = 4.0
+    menu_price: float = 2.0
     upgrades: list[str] = field(default_factory=list)
     available_upgrades: list[BusinessUpgrade] = field(default_factory=list)
     level_configs: dict[int, RestaurantLevelConfig] = field(default_factory=dict)
@@ -65,12 +65,13 @@ class Restaurant:
             for u in upgrades_cfg
         ]
         
-        # Start at Level 1, default price is mid-range of level 1
-        level_1_cfg = configs[1]
-        default_price = sum(level_1_cfg.price_per_meal_range) / 2.0
+        # Start at lowest level, default price is mid-range of that level
+        start_lvl = min(configs.keys()) if configs else 0
+        start_cfg = configs[start_lvl]
+        default_price = sum(start_cfg.price_per_meal_range) / 2.0
 
         return cls(
-            level=1,
+            level=start_lvl,
             reputation=20.0,
             menu_price=round(default_price, 2),
             upgrades=[],

@@ -34,7 +34,7 @@ def get_default_events() -> list[GameEvent]:
                 action=ignore_kids_action
             )
         ],
-        trigger_condition=lambda state: state.restaurant.level == 1
+        trigger_condition=lambda state: state.restaurant.level == 0
     ))
 
     # 2. Health Inspector
@@ -77,7 +77,7 @@ def get_default_events() -> list[GameEvent]:
                 action=inspector_argue_action
             )
         ],
-        trigger_condition=lambda state: state.restaurant.level >= 2
+        trigger_condition=lambda state: state.restaurant.level >= 3
     ))
 
     # 3. The Food Critic
@@ -119,7 +119,7 @@ def get_default_events() -> list[GameEvent]:
                 condition=lambda state: len(state.employees.get_active_employees()) > 0
             )
         ],
-        trigger_condition=lambda state: state.restaurant.level == 3
+        trigger_condition=lambda state: state.restaurant.level == 4
     ))
 
     # 4. Valerie's Greenhouse Leak
@@ -166,7 +166,7 @@ def get_default_events() -> list[GameEvent]:
                 action=valerie_busy_action
             )
         ],
-        trigger_condition=lambda state: state.restaurant.level >= 3 and state.romance.romance_level >= 25 and not state.romance.is_co_owner
+        trigger_condition=lambda state: state.restaurant.level >= 4 and state.romance.romance_level >= 25 and not state.romance.is_co_owner
     ))
 
     # 5. Sebastian's Smear Campaign

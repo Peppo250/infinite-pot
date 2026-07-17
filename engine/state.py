@@ -113,8 +113,8 @@ class GameState:
         # 6. Total service capacity
         total_capacity = player_capacity + employee_capacity + valerie_capacity
         
-        # Special case: level 1 roadside cart with 0 work hours is closed!
-        if self.restaurant.level == 1 and player_work_hours == 0:
+        # Special case: if level < 3 (no employees) and player works 0 hours, the business is closed!
+        if self.restaurant.level < 3 and player_work_hours == 0:
             total_capacity = 0
             
         # 7. Actual customers served

@@ -64,8 +64,8 @@ class GameLoop:
         if r.upgrades:
             print(f"🛠️ Upgrades: {Fore.WHITE}{', '.join(r.upgrades)}{Fore.RESET}")
 
-        # Personal Life (Unlocked at Level 3)
-        if r.level >= 3:
+        # Personal Life (Unlocked at Level 4)
+        if r.level >= 4:
             print(Fore.WHITE + "-" * 50)
             house_str = f"House: Owned (${h.daily_maintenance}/day)" if h.purchased else "House: Renting (No assets)"
             print(f"🏠 {house_str:<27} 🌹 Partner: {Fore.MAGENTA}{rom.partner_name} ({rom.stage_name}){Fore.RESET}")
@@ -94,16 +94,22 @@ class GameLoop:
 
         print(Fore.WHITE + "🎯 Current Objectives:")
         
-        if r.level == 1:
-            print(f"  [ ] Save {Fore.GREEN}$250.00{Fore.RESET} to upgrade to an Edge-of-Town Shop (Current: ${s.player.cash:.2f})")
-            print("  [ ] Keep your cart running and survive!")
+        if r.level == 0:
+            print(f"  [ ] Save {Fore.GREEN}$100.00{Fore.RESET} to buy a Second-Hand Roadside Cart (Current: ${s.player.cash:.2f})")
+            print("  [ ] Serve hungry passersby directly on the street.")
+        elif r.level == 1:
+            print(f"  [ ] Save {Fore.GREEN}$250.00{Fore.RESET} to upgrade to your Own Roadside Cart (Current: ${s.player.cash:.2f})")
+            print("  [ ] Get your business off the ground with a basic set of wheels.")
         elif r.level == 2:
-            print(f"  [ ] Save {Fore.GREEN}$1200.00{Fore.RESET} to upgrade to a Town Restaurant (Current: ${s.player.cash:.2f})")
-            print("  [ ] Optionally hire an employee to handle customers.")
-        elif r.level == 3 and not h.purchased:
+            print(f"  [ ] Save {Fore.GREEN}$800.00{Fore.RESET} to upgrade to an Edge-of-Town Shop (Current: ${s.player.cash:.2f})")
+            print("  [ ] Build up capital with your first proper cart.")
+        elif r.level == 3:
+            print(f"  [ ] Save {Fore.GREEN}$2000.00{Fore.RESET} to upgrade to a Town Restaurant (Current: ${s.player.cash:.2f})")
+            print("  [ ] Optionally hire an employee to help with the rising shop workload.")
+        elif r.level == 4 and not h.purchased:
             print(f"  [ ] Save {Fore.GREEN}$3000.00{Fore.RESET} to purchase your first House (Current: ${s.player.cash:.2f})")
             print(f"  [ ] Visit and go on dates with Valerie at the park (Raise Romance)")
-        elif r.level == 3 and h.purchased and not rom.is_co_owner:
+        elif r.level == 4 and h.purchased and not rom.is_co_owner:
             print(f"  [ ] Build relationship with Valerie to 'Partner' stage (Romance >= 75)")
             print(f"  [ ] Ask Valerie to move in and co-own the business (Requires Romance >= 75)")
         elif c.is_active:
@@ -148,7 +154,7 @@ class GameLoop:
             # 3. Main Menu choices
             print("What would you like to do this morning?")
             print("1. Manage Business (Pricing, Upgrades, Staff, Loans)")
-            if self.state.restaurant.level >= 3:
+            if self.state.restaurant.level >= 4:
                 print("2. Personal Life (Dating, House upgrades)")
             print("3. Open Restaurant for the day")
             print("Q. Quit Prototype")
@@ -157,7 +163,7 @@ class GameLoop:
 
             if choice == "1":
                 self.menu_manage_business()
-            elif choice == "2" and self.state.restaurant.level >= 3:
+            elif choice == "2" and self.state.restaurant.level >= 4:
                 self.menu_personal_life()
             elif choice == "3":
                 self.run_business_day()
@@ -204,7 +210,7 @@ class GameLoop:
                 marketing_cost = self.state.competitor.marketing_counteraction_cost
                 counter_str = " (Active)" if self.state.competitor.counter_marketing_active else ""
                 print(f"5. Counter Competitor Marketing (-${marketing_cost:.2f}){counter_str}")
-            if r.level < 3:
+            if r.level < 4:
                 next_cfg = r.level_configs.get(r.level + 1)
                 if next_cfg:
                     print(f"U. UPGRADE Restaurant to '{next_cfg.name}' (-${next_cfg.upgrade_cost:.2f})")
@@ -237,7 +243,7 @@ class GameLoop:
                 else:
                     print(Fore.RED + msg)
                 input("\nPress Enter to continue...")
-            elif choice == "u" and r.level < 3:
+            elif choice == "u" and r.level < 4:
                 success, msg, cost = r.upgrade_level(p.cash)
                 if success:
                     p.adjust_cash(-cost)
