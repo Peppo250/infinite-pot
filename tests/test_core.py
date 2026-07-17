@@ -123,6 +123,9 @@ def test_romance_milestones() -> None:
     success, msg = rom.ask_to_co_own(has_house=False)
     assert success is False
     
+    # Proposing marriage/co-ownership requires an engagement ring
+    rom.has_ring = True
+    
     # Co-own ask with house
     success, msg = rom.ask_to_co_own(has_house=True)
     assert success is True

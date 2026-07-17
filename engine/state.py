@@ -111,7 +111,7 @@ class GameState:
             open_hours = 0
         
         # 2. Determine potential customers (scales proportionally with open hours)
-        capacity = self.restaurant.current_config.customer_capacity
+        capacity = self.restaurant.customer_capacity
         multiplier = self.town.economic_multiplier
         random_factor = random.uniform(0.85, 1.15)
         
@@ -178,7 +178,7 @@ class GameState:
             rep_change += 0.03 * actual_served * (avg_skill - 0.4)
             
             # Pricing impact
-            max_p = self.restaurant.current_config.price_per_meal_range[1]
+            max_p = self.restaurant.price_per_meal_range[1]
             if self.restaurant.menu_price > max_p:
                 overprice = self.restaurant.menu_price - max_p
                 rep_change -= 0.6 * overprice * actual_served

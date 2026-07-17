@@ -90,6 +90,24 @@
         "daily_maintenance": 5.0,
         "min_level": 4,
         "description": "Showcase your magical pot on a majestic gilded stand, sparking curiosity."
+      },
+      {
+        "id": "sebastian_recipes",
+        "name": "Sebastian's Secret Recipes",
+        "cost": 3000.0,
+        "attraction_bonus": 0.15,
+        "daily_maintenance": 15.0,
+        "min_level": 4,
+        "description": "Exquisite cooking secrets that boost attraction by 15% and increase maximum meal price limits by +$5.00."
+      },
+      {
+        "id": "super_cooker",
+        "name": "Industrial Magic Super-Cooker",
+        "cost": 5000.0,
+        "attraction_bonus": 0.0,
+        "daily_maintenance": 40.0,
+        "min_level": 4,
+        "description": "A customized magic pot regulator setup that permanently increases customer capacity by +30 seats."
       }
     ],
     "house": [
@@ -116,6 +134,38 @@
         "energy_recovery_bonus": 5.0,
         "romance_progress_bonus": 0.10,
         "description": "Lush houseplants that bring serenity to your living room."
+      },
+      {
+        "id": "gourmet_kitchen",
+        "name": "Gourmet Home Kitchen",
+        "cost": 2500.0,
+        "energy_recovery_bonus": 15.0,
+        "romance_progress_bonus": 0.0,
+        "description": "A custom state-of-the-art kitchen for cooking gourmet meals, adding +15 energy recovery per night."
+      },
+      {
+        "id": "backyard_greenhouse",
+        "name": "Luxury Backyard Greenhouse",
+        "cost": 3500.0,
+        "energy_recovery_bonus": 0.0,
+        "romance_progress_bonus": 0.20,
+        "description": "A beautiful scenic greenhouse that provides a +20% romance speed boost on all dates."
+      },
+      {
+        "id": "study_library",
+        "name": "Home Study Library",
+        "cost": 3000.0,
+        "energy_recovery_bonus": 0.0,
+        "romance_progress_bonus": 0.20,
+        "description": "A quiet room filled with books and research archives, providing a +20% romance speed boost."
+      },
+      {
+        "id": "private_office",
+        "name": "Private Office & Vault",
+        "cost": 4000.0,
+        "energy_recovery_bonus": 0.0,
+        "romance_progress_bonus": 0.20,
+        "description": "An executive office setup for administrative and financial strategy, providing a +20% romance speed boost."
       }
     ]
   },

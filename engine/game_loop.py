@@ -111,11 +111,14 @@ class GameLoop:
             print(f"  [ ] Save {Fore.GREEN}$4000.00{Fore.RESET} to purchase your first House (Current: ${s.player.cash:.2f})")
             print(f"  [ ] Go on dates with {rom.partner_name} to build romance!")
         elif r.level == 4 and h.purchased and not rom.is_co_owner:
-            print(f"  [ ] Build relationship with {rom.partner_name} to 'Partner' stage (Romance >= 75)")
-            print(f"  [ ] Ask {rom.partner_name} to move in and co-own the business (Requires Romance >= 75)")
+            if not rom.has_ring:
+                print(f"  [ ] Purchase a Diamond Engagement Ring from Personal Life ($2500.00)")
+            print(f"  [ ] Ask {rom.partner_name} to marry you and co-own the business (Requires Romance >= 75, House, and Ring)")
+        elif r.level == 4 and rom.is_co_owner and rom.wedding_tier == "None":
+            print("  [ ] Plan and host your Wedding Ceremony from the Personal Life menu!")
         elif c.is_active:
             print(f"  [ ] Protect your business and life from Chef Sebastian's aggressive marketing!")
-            print(f"  [ ] Keep Reputation >= 60.0 and Romance >= 80.0")
+            print(f"  [ ] Keep Reputation >= 60.0, Romance >= 80.0, be Married, and hold a Wedding Ceremony.")
             print(f"  [ ] Survive for {Fore.YELLOW}{10 - self.days_survived_competitor}{Fore.RESET} more days under competitor threat.")
 
     def run(self) -> None:
@@ -209,7 +212,7 @@ class GameLoop:
             p = self.state.player
             
             print(f"Current Menu Price: ${r.menu_price:.2f}")
-            min_p, max_p = r.current_config.price_per_meal_range
+            min_p, max_p = r.price_per_meal_range
             print(f"Recommended Price Range: ${min_p:.2f} - ${max_p:.2f}")
             print("-" * 50)
             print("1. Set Menu Meal Price")
@@ -447,9 +450,13 @@ class GameLoop:
                 
             if partner:
                 if not rom.is_co_owner:
-                    print(f"3. Propose to {partner.name} to co-own business & move in")
+                    if not rom.has_ring:
+                        print("5. Buy Diamond Engagement Ring (-$2500.00)")
+                    print(f"3. Propose Marriage & Co-Ownership to {partner.name}")
                 else:
-                    print(Fore.MAGENTA + f"💚 {partner.name} lives with you and co-owns the restaurant!")
+                    print(Fore.MAGENTA + f"💚 {partner.name} is married to you and co-owns the restaurant!")
+                    if rom.wedding_tier == "None":
+                        print("W. Plan and Host the Wedding Ceremony")
                 print("4. Break Up")
 
             print("B. Back")
@@ -499,8 +506,90 @@ class GameLoop:
                     success, msg = rom.break_up()
                     print(Fore.GREEN + msg)
                 input("\nPress Enter to continue...")
+            elif choice == "5" and partner and not rom.has_ring and not rom.is_co_owner:
+                if p.cash >= 2500.0:
+                    p.adjust_cash(-2500.0)
+                    rom.has_ring = True
+                    self.state.finance.record_transaction("Upgrade", 2500.0, "Bought Diamond Engagement Ring")
+                    audio_manager.play_sfx("coin")
+                    audio_manager.play_sfx("success")
+                    print(Fore.GREEN + f"You purchased a gorgeous Diamond Engagement Ring for {partner.name}!")
+                else:
+                    print(Fore.RED + "Insufficient cash! A Diamond Engagement Ring costs $2500.00.")
+                input("\nPress Enter to continue...")
+            elif choice == "w" and partner and rom.is_co_owner and rom.wedding_tier == "None":
+                self.submenu_wedding()
             elif choice == "b":
                 audio_manager.play_music("home")
+                break
+
+    def submenu_wedding(self) -> None:
+        p = self.state.player
+        rom = self.state.romance
+        r = self.state.restaurant
+        
+        while True:
+            self.clear_screen()
+            self.print_header("Oakhaven Wedding Planner", Fore.MAGENTA)
+            print(f"Available Cash: ${p.cash:.2f}")
+            print("-" * 50)
+            print("Plan your dream wedding with your beloved partner:")
+            print("1. Modest Garden Wedding (-$1,500.00 | +15 Reputation)")
+            print("2. Elegant Cathedral Wedding (-$3,500.00 | +35 Reputation)")
+            print("3. Grand Royal Gala Wedding (-$6,000.00 | Maxes Reputation to 100)")
+            print("B. Back")
+            
+            choice = input("\nSelect wedding package: ").strip().lower()
+            audio_manager.play_sfx("select")
+            if choice == "b":
+                break
+            
+            cost = 0
+            rep_boost = 0
+            tier = ""
+            if choice == "1":
+                cost = 1500.0
+                rep_boost = 15.0
+                tier = "Modest"
+            elif choice == "2":
+                cost = 3500.0
+                rep_boost = 35.0
+                tier = "Elegant"
+            elif choice == "3":
+                cost = 6000.0
+                rep_boost = 60.0
+                tier = "Royal"
+            else:
+                print(Fore.RED + "Invalid choice.")
+                input("\nPress Enter...")
+                continue
+                
+            if p.cash < cost:
+                print(Fore.RED + f"Insufficient cash for this package! Need ${cost:.2f}.")
+                input("\nPress Enter...")
+                continue
+                
+            confirm = input(f"Are you sure you want to purchase the {tier} Wedding Package for ${cost:.2f}? (y/n): ").lower()
+            audio_manager.play_sfx("select")
+            if confirm == "y":
+                p.adjust_cash(-cost)
+                rom.wedding_tier = tier
+                r.adjust_reputation(rep_boost)
+                self.state.finance.record_transaction("Upgrade", cost, f"Hosted {tier} Wedding Ceremony")
+                audio_manager.play_sfx("coin")
+                audio_manager.play_sfx("success")
+                
+                self.clear_screen()
+                self.print_header("The Wedding Day!", Fore.MAGENTA)
+                print(f"The bells chime across Oakhaven as you stand alongside {rom.partner_name}.")
+                if tier == "Modest":
+                    print("A cozy ceremony in the blooming town gardens with close friends.")
+                elif tier == "Elegant":
+                    print("A gorgeous traditional ceremony in Oakhaven's grand cathedral with half the town attending.")
+                elif tier == "Royal":
+                    print("A legendary gala celebration that will be spoken of for decades! The entire valley celebrates with you.")
+                print(Fore.GREEN + f"\nCongratulations! You are officially married! (+{rep_boost} Reputation)")
+                input("\nPress Enter to begin your new life...")
                 break
 
     def submenu_house_upgrades(self) -> None:
@@ -668,7 +757,13 @@ class GameLoop:
 
         # Competitor survival logic
         if self.state.competitor.is_active:
-            if self.state.restaurant.reputation >= 60.0 and self.state.romance.romance_level >= 80.0:
+            is_married = self.state.romance.is_co_owner
+            has_wedding = self.state.romance.wedding_tier != "None"
+            
+            if (self.state.restaurant.reputation >= 60.0 and 
+                self.state.romance.romance_level >= 80.0 and 
+                is_married and 
+                has_wedding):
                 self.days_survived_competitor += 1
                 if self.days_survived_competitor >= 10:
                     self.victory = True
@@ -677,7 +772,7 @@ class GameLoop:
                 # resets if they drop below the survival threshold
                 if self.days_survived_competitor > 0:
                     self.days_survived_competitor = 0
-                    print(Fore.RED + "\n⚠️ You lost your focus! Sebastian's marketing is eroding your lifestyle. Survival days reset.")
+                    print(Fore.RED + "\n⚠️ You lost your focus! To defeat Sebastian, you must keep Reputation >= 60, Romance >= 80, propose marriage, and host a Wedding ceremony! Survival days reset.")
 
         print("\nPress Enter to sleep and start the next day...")
         input()

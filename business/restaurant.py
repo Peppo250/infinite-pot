@@ -88,6 +88,20 @@ class Restaurant:
     def current_config(self) -> RestaurantLevelConfig:
         return self.level_configs[self.level]
 
+    @property
+    def customer_capacity(self) -> int:
+        base_cap = self.current_config.customer_capacity
+        if "super_cooker" in self.upgrades:
+            base_cap += 30
+        return base_cap
+
+    @property
+    def price_per_meal_range(self) -> tuple[float, float]:
+        min_p, max_p = self.current_config.price_per_meal_range
+        if "sebastian_recipes" in self.upgrades:
+            max_p = max_p + 5.0
+        return min_p, max_p
+
     def upgrade_level(self, player_cash: float) -> tuple[bool, str, float]:
         """Tries to upgrade to the next level. Returns (success, message, cost)."""
         next_lvl = self.level + 1
@@ -138,7 +152,7 @@ class Restaurant:
         reputation_bonus = (self.reputation - 50.0) / 250.0
 
         # Pricing impact: check if menu price is out of range
-        min_p, max_p = cfg.price_per_meal_range
+        min_p, max_p = self.price_per_meal_range
         price_impact = 0.0
         if self.menu_price > max_p:
             overprice = self.menu_price - max_p

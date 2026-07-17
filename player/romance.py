@@ -59,6 +59,8 @@ class RomanticCharacter:
 class RomanceSystem:
     characters: list[RomanticCharacter] = field(default_factory=list)
     active_partner_name: str | None = None  # Name of active partner (only one allowed)
+    has_ring: bool = False
+    wedding_tier: str = "None"  # "None", "Modest", "Elegant", "Royal"
     
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "RomanceSystem":
@@ -92,14 +94,14 @@ class RomanceSystem:
             description="A high-energy logistics manager looking to start her own business, ambitious and demanding."
         )
         
-        return cls(characters=[c1, c2, c3], active_partner_name=None)
+        return cls(characters=[c1, c2, c3], active_partner_name=None, has_ring=False, wedding_tier="None")
 
     @property
     def partner(self) -> RomanticCharacter | None:
         """Returns the active romantic partner if any."""
         if not self.active_partner_name:
             return None
-        return next((c for c in self.characters if c.name == self.active_partner_name), None)
+        return next((c_item for c_item in self.characters if c_item.name == self.active_partner_name), None)
 
     @property
     def partner_name(self) -> str:
@@ -112,7 +114,7 @@ class RomanceSystem:
         if not p:
             return "Single"
         if p.is_co_owner:
-            return "Partner & Business Co-Owner"
+            return "Married & Business Co-Owner"
         if p.is_partner:
             return "Partner"
         return "Single"
@@ -135,11 +137,11 @@ class RomanceSystem:
 
     def get_characters_available(self, day_name: str) -> list[RomanticCharacter]:
         """Returns characters hanging out at the bar on the current day."""
-        return [c for c in self.characters if day_name in c.schedule]
+        return [c_item for c_item in self.characters if day_name in c_item.schedule]
 
     def propose_relationship(self, name: str) -> tuple[bool, str]:
         """Player asks the character to be their partner."""
-        char = next((c for c in self.characters if c.name == name), None)
+        char = next((c_item for c_item in self.characters if c_item.name == name), None)
         if not char:
             return False, "Character not found."
 
@@ -164,6 +166,8 @@ class RomanceSystem:
         p.is_co_owner = False
         p.romance_level = max(0.0, p.romance_level - 30.0)  # Heavy romance hit
         self.active_partner_name = None
+        self.has_ring = False
+        self.wedding_tier = "None"
         return True, f"You broke up with {old_name}. You are now single."
 
     def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:
@@ -181,8 +185,11 @@ class RomanceSystem:
         if not has_house:
             return False, f"{p.name} appreciates the gesture, but feels you need a proper house of your own before taking this step."
 
+        if not self.has_ring:
+            return False, f"You need to purchase a Diamond Engagement Ring first!"
+
         p.is_co_owner = True
-        return True, f"{p.name} happily accepts! She moves into your house and joins the restaurant as a Co-Owner!"
+        return True, f"{p.name} gasps as you open the velvet box. 'Yes! A thousand times yes!' She moves into your house and joins the restaurant as your wife and Co-Owner!"
 
     def decay_without_house(self) -> str:
         """Applies daily romance decay if dating without a house. Returns a message if decay occurred."""
