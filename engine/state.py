@@ -85,8 +85,12 @@ class GameState:
         Returns a dictionary summarizing the day's results.
         """
         # 1. Determine customer attraction
+        partner_boost = 0.0
+        if self.romance.partner and self.romance.partner.is_partner:
+            partner_boost = self.romance.partner.attraction_boost
+            
         drain = self.competitor.get_attraction_drain()
-        attraction = self.restaurant.calculate_attraction(competitor_impact=drain)
+        attraction = self.restaurant.calculate_attraction(competitor_impact=drain) + partner_boost
         
         # 2. Determine potential customers
         capacity = self.restaurant.current_config.customer_capacity
@@ -107,11 +111,11 @@ class GameState:
         active_employees = self.employees.get_active_employees()
         employee_capacity = sum(int(8 * (2 + e.skill * 4)) for e in active_employees)
         
-        # 5. Calculate Valerie's capacity (if co-owner)
-        valerie_capacity = 32 if self.romance.is_co_owner else 0
+        # 5. Calculate partner's capacity (if co-owner)
+        partner_capacity = 32 if self.romance.is_co_owner else 0
         
         # 6. Total service capacity
-        total_capacity = player_capacity + employee_capacity + valerie_capacity
+        total_capacity = player_capacity + employee_capacity + partner_capacity
         
         # Special case: if level < 3 (no employees) and player works 0 hours, the business is closed!
         if self.restaurant.level < 3 and player_work_hours == 0:
@@ -154,12 +158,14 @@ class GameState:
         # 9. Reputation adjustments
         rep_change = 0.0
         if actual_served > 0:
-            # Good service skill increases rep
-            rep_change += 0.03 * actual_served * (avg_skill - 0.4)
+            # Good service skill increases rep (improved rate)
+            rep_change += 0.15 * actual_served * (avg_skill - 0.3)
             
-            # Pricing impact
+            # Fair pricing bonus
             max_p = self.restaurant.current_config.price_per_meal_range[1]
-            if self.restaurant.menu_price > max_p:
+            if self.restaurant.menu_price <= max_p:
+                rep_change += 0.05 * actual_served
+            else:
                 overprice = self.restaurant.menu_price - max_p
                 rep_change -= 0.6 * overprice * actual_served
         
@@ -211,10 +217,17 @@ class GameState:
             self.player.adjust_cash(-wages)
             self.finance.record_transaction("Wages", wages, f"Wages for hired staff")
             
-        # Valerie help if co-owner (she doesn't take wages, but she provides support)
-        if self.romance.is_co_owner:
-            self.restaurant.adjust_reputation(1.0)
-            notifications.append("Co-Owner Valerie's floral touch boosted your restaurant's atmosphere! (+1.0 Reputation)")
+        # Partner co-owner support
+        p = self.romance.partner
+        if p and p.is_co_owner:
+            self.restaurant.adjust_reputation(1.5)
+            notifications.append(f"Co-Owner {p.name}'s support boosted your restaurant's atmosphere! (+1.5 Reputation)")
+
+        # Romance Decay if dating without a house
+        if p and p.is_partner and not self.house.purchased:
+            decay_msg = self.romance.decay_without_house()
+            if decay_msg:
+                notifications.append(decay_msg)
 
         # 2. Apply Loan Interest
         interest = self.loan.apply_daily_interest()
@@ -233,9 +246,10 @@ class GameState:
             
         # Competitor check
         competitor_was_active = self.competitor.is_active
+        has_partner = self.romance.partner is not None and (self.romance.partner.is_partner or self.romance.is_co_owner)
         unlocked = self.competitor.check_unlock_conditions(
             restaurant_level=self.restaurant.level,
-            has_partner=(self.romance.relationship_stage_index >= 3 or self.romance.is_co_owner),
+            has_partner=has_partner,
             has_house=self.house.purchased
         )
         if unlocked and not competitor_was_active:

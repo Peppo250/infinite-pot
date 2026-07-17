@@ -81,16 +81,31 @@ def test_house_upgrades() -> None:
     assert success is False
 
 def test_romance_milestones() -> None:
-    config = {
-        "romance": {
-            "date_cost": 80.0,
-            "energy_cost_for_date": 25.0,
-            "romance_level_milestones": [0, 25, 50, 75, 100],
-            "relationship_stages": ["Stranger", "Acquaintance", "Close Friend", "Partner", "Co-Owner"]
-        }
-    }
+    config = {}
     rom = RomanceSystem.from_config(config)
-    assert rom.stage_name == "Stranger"
+    assert rom.stage_name == "Single"
+    assert len(rom.characters) == 3
+    
+    # Try dating without a partner
+    success, msg, c_spent, e_spent = rom.go_on_date(100.0, 100.0)
+    assert success is False
+
+    target = rom.characters[0]
+    
+    # Propose immediately (fails since romance is 0)
+    success, msg = rom.propose_relationship(target.name)
+    assert success is False
+    
+    # Talk to character to build romance
+    dialogue, gain = target.interact_talk()
+    assert target.romance_level > 0.0
+    
+    # Force romance to 45.0 to propose relationship
+    target.romance_level = 45.0
+    success, msg = rom.propose_relationship(target.name)
+    assert success is True
+    assert rom.partner_name == target.name
+    assert rom.stage_name == "Partner"
     
     # Try date with insufficient funds
     success, msg, c_spent, e_spent = rom.go_on_date(10.0, 100.0)
@@ -101,14 +116,10 @@ def test_romance_milestones() -> None:
     assert success is True
     assert c_spent == 80.0
     assert e_spent == 25.0
-    assert rom.romance_level > 0.0
-    
-    # Force level to Partner stage
-    rom.romance_level = 80.0
-    rom.update_stage()
-    assert rom.stage_name == "Partner"
+    assert rom.romance_level > 45.0
     
     # Co-own ask without house
+    rom.romance_level = 80.0
     success, msg = rom.ask_to_co_own(has_house=False)
     assert success is False
     
@@ -116,7 +127,12 @@ def test_romance_milestones() -> None:
     success, msg = rom.ask_to_co_own(has_house=True)
     assert success is True
     assert rom.is_co_owner is True
-    assert rom.stage_name == "Co-Owner"
+    assert "Co-Owner" in rom.stage_name
+    
+    # Test break up
+    success, msg = rom.break_up()
+    assert success is True
+    assert rom.stage_name == "Single"
 
 def test_loans() -> None:
     config = {

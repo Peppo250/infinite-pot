@@ -1,89 +1,226 @@
 from dataclasses import dataclass, field
+import random
 from typing import Any
 
 @dataclass
-class RomanceSystem:
-    partner_name: str = "Valerie"
-    partner_occupation: str = "Local Florist"
-    romance_level: float = 0.0  # 0 to 100
-    relationship_stage_index: int = 0
-    stages: list[str] = field(default_factory=list)
-    milestones: list[float] = field(default_factory=list)
-    date_cost: float = 80.0
-    energy_cost_for_date: float = 25.0
+class RomanticCharacter:
+    name: str
+    archetype: str  # "Artist", "Scholar", "Entrepreneur"
+    romance_level: float = 0.0
+    is_partner: bool = False
     is_co_owner: bool = False
-    dates_had: int = 0
+    decay_rate: float = 2.0
+    attraction_boost: float = 0.05
+    schedule: list[str] = field(default_factory=list)
+    description: str = ""
 
+    def interact_talk(self) -> tuple[str, float]:
+        """Player talks to the character. Returns (dialogue, romance_gain)."""
+        gain = random.uniform(3.0, 6.0)
+        self.romance_level = min(100.0, self.romance_level + gain)
+        
+        dialogues = {
+            "Artist": [
+                f"{self.name} talks passionately about color theory and how food is another canvas. (+{gain:.1f} Romance)",
+                f"{self.name} shares a sketch she made of Oakhaven's square. (+{gain:.1f} Romance)",
+                f"{self.name} wonders if true beauty lies in fleeting moments or permanent creations. (+{gain:.1f} Romance)"
+            ],
+            "Scholar": [
+                f"{self.name} discusses the history of Oakhaven and old trade logs. (+{gain:.1f} Romance)",
+                f"{self.name} explains a complex economic theory about infinite resource dynamics. (+{gain:.1f} Romance)",
+                f"{self.name} looks up from her book and shares an interesting quote with you. (+{gain:.1f} Romance)"
+            ],
+            "Entrepreneur": [
+                f"{self.name} analyzes Chef Sebastian's marketing tactics and suggests counter-tactics. (+{gain:.1f} Romance)",
+                f"{self.name} talks about her business dreams and the value of hard work. (+{gain:.1f} Romance)",
+                f"{self.name} reviews your menu prices and suggests a margin expansion strategy! (+{gain:.1f} Romance)"
+            ]
+        }
+        
+        chosen_dialogue = random.choice(dialogues[self.archetype])
+        return chosen_dialogue, gain
+
+    def interact_drink(self, drink_cost: float = 25.0) -> tuple[str, float]:
+        """Player buys a drink for the character. Returns (dialogue, romance_gain)."""
+        # Entrepreneur likes expensive stuff, Artist likes cozy drinks, Scholar likes good coffee/tea
+        mults = {"Artist": 1.2, "Scholar": 1.0, "Entrepreneur": 1.4}
+        gain = random.uniform(8.0, 12.0) * mults[self.archetype]
+        self.romance_level = min(100.0, self.romance_level + gain)
+        
+        dialogues = {
+            "Artist": f"You buy {self.name} a glass of sweet plum wine. She smiles and notes how the candlelight catches the glass. (+{gain:.1f} Romance)",
+            "Scholar": f"You buy {self.name} a dark stout. She raises her glass and toast to intellectual curiosity. (+{gain:.1f} Romance)",
+            "Entrepreneur": f"You buy {self.name} a premium imported champagne. She clinks glasses and says: 'To scaling operations.' (+{gain:.1f} Romance)"
+        }
+        
+        return dialogues[self.archetype], gain
+
+@dataclass
+class RomanceSystem:
+    characters: list[RomanticCharacter] = field(default_factory=list)
+    active_partner_name: str | None = None  # Name of active partner (only one allowed)
+    
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "RomanceSystem":
-        rom_cfg = config.get("romance", {})
-        return cls(
-            partner_name=rom_cfg.get("partner_name", "Valerie"),
-            partner_occupation=rom_cfg.get("partner_occupation", "Local Florist"),
-            romance_level=0.0,
-            relationship_stage_index=0,
-            stages=rom_cfg.get("relationship_stages", [
-                "Stranger", "Acquaintance", "Close Friend", "Partner", "Partner & Business Co-Owner"
-            ]),
-            milestones=rom_cfg.get("romance_level_milestones", [0, 25, 50, 75, 100]),
-            date_cost=rom_cfg.get("date_cost", 80.0),
-            energy_cost_for_date=rom_cfg.get("energy_cost_for_date", 25.0)
+        # Generate our 3 unique girls
+        names_artist = ["Clara", "Maya", "Elena", "Sophie", "Chloe"]
+        names_scholar = ["Sarah", "Ada", "Grace", "Evelyn", "Zoe"]
+        names_entrepreneur = ["Victoria", "Roxanne", "Samantha", "Iris", "Diana"]
+        
+        c1 = RomanticCharacter(
+            name=random.choice(names_artist),
+            archetype="Artist",
+            decay_rate=4.0,
+            attraction_boost=0.06,
+            schedule=["Tuesday", "Thursday", "Saturday"],
+            description="A creative florist and painter who values emotional connection and deep conversations."
         )
+        c2 = RomanticCharacter(
+            name=random.choice(names_scholar),
+            archetype="Scholar",
+            decay_rate=2.0,
+            attraction_boost=0.09,
+            schedule=["Monday", "Wednesday", "Friday"],
+            description="An independent researcher studying Oakhaven's history, pragmatic and intellectually driven."
+        )
+        c3 = RomanticCharacter(
+            name=random.choice(names_entrepreneur),
+            archetype="Entrepreneur",
+            decay_rate=6.0,
+            attraction_boost=0.16,
+            schedule=["Wednesday", "Friday", "Sunday"],
+            description="A high-energy logistics manager looking to start her own business, ambitious and demanding."
+        )
+        
+        return cls(characters=[c1, c2, c3], active_partner_name=None)
+
+    @property
+    def partner(self) -> RomanticCharacter | None:
+        """Returns the active romantic partner if any."""
+        if not self.active_partner_name:
+            return None
+        return next((c for c in self.characters if c.name == self.active_partner_name), None)
+
+    @property
+    def partner_name(self) -> str:
+        p = self.partner
+        return p.name if p else "None"
 
     @property
     def stage_name(self) -> str:
-        if self.is_co_owner:
-            return self.stages[-1]
-        return self.stages[self.relationship_stage_index]
+        p = self.partner
+        if not p:
+            return "Single"
+        if p.is_co_owner:
+            return "Partner & Business Co-Owner"
+        if p.is_partner:
+            return "Partner"
+        return "Single"
+
+    @property
+    def romance_level(self) -> float:
+        p = self.partner
+        return p.romance_level if p else 0.0
+
+    @romance_level.setter
+    def romance_level(self, value: float) -> None:
+        p = self.partner
+        if p:
+            p.romance_level = value
+
+    @property
+    def is_co_owner(self) -> bool:
+        p = self.partner
+        return p.is_co_owner if p else False
+
+    def get_characters_available(self, day_name: str) -> list[RomanticCharacter]:
+        """Returns characters hanging out at the bar on the current day."""
+        return [c for c in self.characters if day_name in c.schedule]
+
+    def propose_relationship(self, name: str) -> tuple[bool, str]:
+        """Player asks the character to be their partner."""
+        char = next((c for c in self.characters if c.name == name), None)
+        if not char:
+            return False, "Character not found."
+
+        if self.active_partner_name:
+            return False, f"You are already in a relationship with {self.active_partner_name}! You must break up first."
+
+        if char.romance_level < 40.0:
+            return False, f"{char.name} likes you, but feels it is too early to commit. (Need 40.0 Romance, currently {char.romance_level:.1f})"
+
+        char.is_partner = True
+        self.active_partner_name = char.name
+        return True, f"You ask {char.name} to be your partner, and she happily agrees! She is now your partner."
+
+    def break_up(self) -> tuple[bool, str]:
+        """Breaks up with the current active partner."""
+        p = self.partner
+        if not p:
+            return False, "You are not in a relationship."
+
+        old_name = p.name
+        p.is_partner = False
+        p.is_co_owner = False
+        p.romance_level = max(0.0, p.romance_level - 30.0)  # Heavy romance hit
+        self.active_partner_name = None
+        return True, f"You broke up with {old_name}. You are now single."
+
+    def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:
+        """Player asks partner to move in and co-own the business."""
+        p = self.partner
+        if not p:
+            return False, "You do not have a partner to propose to!"
+
+        if p.is_co_owner:
+            return False, f"{p.name} is already your co-owner!"
+
+        if p.romance_level < 75.0:
+            return False, f"Your relationship isn't close enough yet. (Need 75.0 Romance, currently {p.romance_level:.1f})"
+
+        if not has_house:
+            return False, f"{p.name} appreciates the gesture, but feels you need a proper house of your own before taking this step."
+
+        p.is_co_owner = True
+        return True, f"{p.name} happily accepts! She moves into your house and joins the restaurant as a Co-Owner!"
+
+    def decay_without_house(self) -> str:
+        """Applies daily romance decay if dating without a house. Returns a message if decay occurred."""
+        p = self.partner
+        if not p or p.is_co_owner:
+            return ""
+
+        # Decay romance
+        old_val = p.romance_level
+        p.romance_level = max(0.0, p.romance_level - p.decay_rate)
+        
+        # Artist wants emotional security, Entrepreneur has high lifestyle expectations, Scholar is chill
+        reasons = {
+            "Artist": "needs a stable home environment to feel secure.",
+            "Scholar": "wonders when you two will establish a permanent home.",
+            "Entrepreneur": "expects you to have a house if you are serious about a life together."
+        }
+        
+        return f"Relation Decay: {p.name}'s romance dropped by {p.decay_rate} pts. She {reasons[p.archetype]} ({old_val:.1f} → {p.romance_level:.1f})"
 
     def go_on_date(self, current_cash: float, current_energy: float, progress_multiplier: float = 1.0) -> tuple[bool, str, float, float]:
         """Runs a date. Returns (success, message, cash_spent, energy_spent)."""
-        if current_cash < self.date_cost:
-            return False, f"Insufficient cash for a date! Need ${self.date_cost:.2f}.", 0.0, 0.0
-        if current_energy < self.energy_cost_for_date:
-            return False, f"Too tired for a date! Need {self.energy_cost_for_date} energy.", 0.0, 0.0
+        p = self.partner
+        if not p:
+            return False, "You do not have an active partner to go on a date with!", 0.0, 0.0
+            
+        date_cost = 80.0
+        energy_cost_for_date = 25.0
+        
+        if current_cash < date_cost:
+            return False, f"Insufficient cash for a date! Need ${date_cost:.2f}.", 0.0, 0.0
+        if current_energy < energy_cost_for_date:
+            return False, f"Too tired for a date! Need {energy_cost_for_date} energy.", 0.0, 0.0
 
         # Calculate progression
-        self.dates_had += 1
-        base_progress = 10.0 + (5.0 if self.dates_had <= 3 else 2.0)  # slightly faster early on
+        base_progress = 12.0
         actual_progress = base_progress * progress_multiplier
-        self.romance_level = min(100.0, self.romance_level + actual_progress)
+        p.romance_level = min(100.0, p.romance_level + actual_progress)
         
-        # Check stage progression
-        self.update_stage()
-
-        msg = f"You had a wonderful date with {self.partner_name} at the local park. (+{actual_progress:.1f} Romance)"
-        return True, msg, self.date_cost, self.energy_cost_for_date
-
-    def update_stage(self) -> None:
-        """Updates the relationship stage based on romance level (ignoring co-owner which is manual)."""
-        if self.is_co_owner:
-            self.relationship_stage_index = len(self.stages) - 1
-            return
-
-        # Find the highest milestone we've passed
-        new_stage = 0
-        for i, milestone in enumerate(self.milestones):
-            if self.romance_level >= milestone:
-                new_stage = i
-        
-        # Keep it capped at "Partner" (index 3) before asking to co-own (index 4)
-        if new_stage >= len(self.stages) - 1:
-            new_stage = len(self.stages) - 2
-
-        self.relationship_stage_index = new_stage
-
-    def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:
-        """Player asks Valerie to move in and co-own the business."""
-        if self.is_co_owner:
-            return False, f"{self.partner_name} is already your partner and business co-owner!"
-        
-        if self.romance_level < 75.0 or self.relationship_stage_index < 3:
-            return False, f"Your relationship isn't close enough yet. (Need stage: 'Partner')"
-
-        if not has_house:
-            return False, f"{self.partner_name} appreciates the gesture, but feels you two need a proper house of your own before taking this step."
-
-        self.is_co_owner = True
-        self.relationship_stage_index = len(self.stages) - 1
-        return True, f"{self.partner_name} happily accepts! She moves into your house and joins the restaurant as a Co-Owner!"
+        msg = f"You had a wonderful date with {p.name} at the local park. (+{actual_progress:.1f} Romance)"
+        return True, msg, date_cost, energy_cost_for_date

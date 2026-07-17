@@ -32,6 +32,11 @@ class Restaurant:
     level_configs: dict[int, RestaurantLevelConfig] = field(default_factory=dict)
     meals_served_today: int = 0
     revenue_today: float = 0.0
+    custom_name: str = ""
+
+    @property
+    def name(self) -> str:
+        return self.custom_name if self.custom_name else self.current_config.name
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "Restaurant":

@@ -108,10 +108,10 @@ class GameLoop:
             print("  [ ] Optionally hire an employee to help with the rising shop workload.")
         elif r.level == 4 and not h.purchased:
             print(f"  [ ] Save {Fore.GREEN}$3000.00{Fore.RESET} to purchase your first House (Current: ${s.player.cash:.2f})")
-            print(f"  [ ] Visit and go on dates with Valerie at the park (Raise Romance)")
+            print(f"  [ ] Visit the Tavern in the evening to socialize and find a partner.")
         elif r.level == 4 and h.purchased and not rom.is_co_owner:
-            print(f"  [ ] Build relationship with Valerie to 'Partner' stage (Romance >= 75)")
-            print(f"  [ ] Ask Valerie to move in and co-own the business (Requires Romance >= 75)")
+            print(f"  [ ] Build relationship with {rom.partner_name} to 'Partner' stage (Romance >= 75)")
+            print(f"  [ ] Ask {rom.partner_name} to move in and co-own the business (Requires Romance >= 75)")
         elif c.is_active:
             print(f"  [ ] Protect your business and life from Chef Sebastian's aggressive marketing!")
             print(f"  [ ] Keep Reputation >= 60.0 and Romance >= 80.0")
@@ -121,7 +121,12 @@ class GameLoop:
         self.clear_screen()
         print(Fore.CYAN + "=== WELCOME TO THE INFINITE POT PROTOTYPE ===")
         print("A simulation about cooking magic food and figuring out what you are working for.\n")
-        input("Press Enter to start your journey...")
+        shop_name = input("Enter a name for your culinary business (default: The Infinite Pot): ").strip()
+        if not shop_name:
+            shop_name = "The Infinite Pot"
+        self.state.restaurant.custom_name = shop_name
+        print(Fore.GREEN + f"\nYour culinary journey starts at {shop_name}!")
+        input("\nPress Enter to start your journey...")
 
         while not self.game_over:
             # 1. Start of Day Screen
@@ -180,12 +185,12 @@ class GameLoop:
             self.print_header("Victory!", Fore.GREEN)
             print("\nCongratulations! You have completed the V1 Prototype of Infinite Pot.")
             print(f"You successfully upgraded to a full Town Restaurant, bought a cozy home,")
-            print(f"found romance with Valerie, and successfully defended your life and business")
+            print(f"found romance with {self.state.romance.partner_name}, and successfully defended your life and business")
             print(f"against Chef Sebastian's attempts to run you out of town.")
             print("\nThrough it all, you cooked unlimited food with a single pot,")
             print("yet food was never the challenge. Balancing bills, relationships, employees,")
             print("and rivals was the real challenge.")
-            print("\nAt the end of your journey, you sit on the couch with Valerie, looking at the restaurant.")
+            print(f"\nAt the end of your journey, you sit on the couch with {self.state.romance.partner_name}, looking at the restaurant.")
             print(Fore.YELLOW + '"What are we actually working for?"' + " she asks softly.")
             print("You smile, but the game leaves the answer to you.")
         else:
@@ -249,6 +254,12 @@ class GameLoop:
                     p.adjust_cash(-cost)
                     self.state.finance.record_transaction("Upgrade", cost, f"Upgraded restaurant to Level {r.level}")
                     print(Fore.GREEN + msg)
+                    rename_choice = input("Would you like to rename your business for this new era? (y/n): ").lower()
+                    if rename_choice == 'y':
+                        new_name = input("Enter new business name: ").strip()
+                        if new_name:
+                            r.custom_name = new_name
+                            print(Fore.GREEN + f"Your business has been renamed to: {new_name}")
                 else:
                     print(Fore.RED + msg)
                 input("\nPress Enter to continue...")
@@ -366,32 +377,13 @@ class GameLoop:
                     print(f"  - {e.name} | Skill: {e.skill:.2f} | Reliability: {e.reliability:.2f} | Salary: ${e.daily_salary:.2f}/day | Exp: {e.experience} yrs")
             
             print("-" * 50)
-            print("Available Candidates for Hire:")
-            if not es.candidates:
-                print("  No candidates available.")
-            else:
-                for i, c in enumerate(es.candidates, 1):
-                    print(f"  {i}. {c.name} | Skill: {c.skill:.2f} | Reliability: {c.reliability:.2f} | Salary: ${c.daily_salary:.2f}/day | Exp: {c.experience} yrs")
-            
+            print(Fore.YELLOW + "💡 To hire new employees, visit the local Tavern in the evening.")
             print("-" * 50)
-            print("1. Hire a Candidate")
-            print("2. Fire an Employee")
+            print("1. Fire an Employee")
             print("B. Back")
 
             choice = input("\nSelect: ").strip().lower()
             if choice == "1":
-                if not es.candidates:
-                    print(Fore.YELLOW + "No candidates available.")
-                    input("\nPress Enter...")
-                    continue
-                name_input = input("Enter candidate name to hire: ").strip()
-                success, msg = es.hire_employee(name_input, r.current_config.max_employees)
-                if success:
-                    print(Fore.GREEN + msg)
-                else:
-                    print(Fore.RED + msg)
-                input("\nPress Enter to continue...")
-            elif choice == "2":
                 if not es.hired:
                     print(Fore.YELLOW + "No employees to fire.")
                     input("\nPress Enter...")
@@ -413,35 +405,51 @@ class GameLoop:
             p = self.state.player
             rom = self.state.romance
             h = self.state.house
+            partner = rom.partner
 
             print(f"Available Cash: ${p.cash:.2f} | Energy: {p.energy:.1f}/{p.max_energy}")
-            print(f"Relationship with {rom.partner_name} ({rom.partner_occupation}):")
-            print(f"  Stage: {rom.stage_name} | Progress: {rom.romance_level:.1f}/100.0")
+            if not partner:
+                print("You are currently single. Visit the Tavern in the evening to meet people.")
+            else:
+                print(f"Relationship with {partner.name} ({partner.archetype}):")
+                print(f"  Stage: {rom.stage_name} | Progress: {rom.romance_level:.1f}/100.0")
+                if not h.purchased:
+                    print(Fore.RED + f"  ⚠️ Dating without a house causes Romance to decay by {partner.decay_rate} pts/day!")
             print(f"House Ownership: " + ("Owned" if h.purchased else "None"))
             print("-" * 50)
             
-            print("1. Go on a Date with Valerie (Costs $80.00, 25 Energy)")
+            if partner:
+                if h.purchased:
+                    print(f"1. Go on a Date with {partner.name} (Costs $80.00, 25 Energy)")
+                else:
+                    print(Fore.WHITE + "1. Go on a Date (Requires a House to host date nights)")
             
             if not h.purchased:
                 print(f"2. Purchase a House (-${h.cost:.2f})")
             else:
                 print("2. Customize and Upgrade House")
                 
-            if not rom.is_co_owner:
-                print("3. Propose Valerie to co-own business & move in")
-            else:
-                print(Fore.MAGENTA + "💚 Valerie lives with you and co-owns the restaurant!")
+            if partner:
+                if not rom.is_co_owner:
+                    print(f"3. Propose to {partner.name} to co-own business & move in")
+                else:
+                    print(Fore.MAGENTA + f"💚 {partner.name} lives with you and co-owns the restaurant!")
+                print("4. Break Up")
 
             print("B. Back")
 
             choice = input("\nSelect: ").strip().lower()
-            if choice == "1":
+            if choice == "1" and partner:
+                if not h.purchased:
+                    print(Fore.RED + "You need a house of your own before hosting date nights!")
+                    input("\nPress Enter to continue...")
+                    continue
                 mult = 1.0 + h.get_romance_progress_bonus()
                 success, msg, cash_spent, energy_spent = rom.go_on_date(p.cash, p.energy, progress_multiplier=mult)
                 if success:
                     p.adjust_cash(-cash_spent)
                     p.adjust_energy(-energy_spent)
-                    self.state.finance.record_transaction("Date", cash_spent, "Went on date with Valerie")
+                    self.state.finance.record_transaction("Date", cash_spent, f"Went on date with {partner.name}")
                     print(Fore.GREEN + msg)
                 else:
                     print(Fore.RED + msg)
@@ -459,12 +467,18 @@ class GameLoop:
                 else:
                     self.submenu_house_upgrades()
                 input("\nPress Enter to continue...")
-            elif choice == "3" and not rom.is_co_owner:
+            elif choice == "3" and partner and not rom.is_co_owner:
                 success, msg = rom.ask_to_co_own(h.purchased)
                 if success:
                     print(Fore.GREEN + msg)
                 else:
                     print(Fore.RED + msg)
+                input("\nPress Enter to continue...")
+            elif choice == "4" and partner:
+                confirm = input(f"Are you sure you want to break up with {partner.name}? (y/n): ").lower()
+                if confirm == 'y':
+                    success, msg = rom.break_up()
+                    print(Fore.GREEN + msg)
                 input("\nPress Enter to continue...")
             elif choice == "b":
                 break
@@ -523,23 +537,23 @@ class GameLoop:
         if active_staff:
             print("Your hired employees are working and will serve customers automatically.")
         if self.state.romance.is_co_owner:
-            print("Valerie is helping in the restaurant today!")
+            print(f"{self.state.romance.partner_name} is helping in the restaurant today!")
             
         work_hours = 0
         while True:
             try:
-                ans = input("How many hours do you want to work today? (0-8): ").strip()
+                ans = input("How many hours do you want to work today? (0-24): ").strip()
                 work_hours = int(ans)
-                if 0 <= work_hours <= 8:
+                if 0 <= work_hours <= 24:
                     energy_needed = work_hours * p.work_energy_cost_per_hour
                     if p.energy < energy_needed:
                         print(Fore.RED + f"You don't have enough energy to work {work_hours} hours. You need {energy_needed} energy.")
                     else:
                         break
                 else:
-                    print(Fore.RED + "Hours must be between 0 and 8.")
+                    print(Fore.RED + "Hours must be between 0 and 24.")
             except ValueError:
-                print(Fore.RED + "Invalid input. Please enter a number between 0 and 8.")
+                print(Fore.RED + "Invalid input. Please enter a number between 0 and 24.")
 
         # 2. Run simulation
         self.clear_screen()
@@ -579,6 +593,38 @@ class GameLoop:
         
         # Display the financial report for today
         print(self.state.finance.get_daily_report())
+        input("\nPress Enter to continue to evening choices...")
+
+        # Evening phase choices
+        while True:
+            self.clear_screen()
+            self.print_header("Evening Phase", Fore.CYAN)
+            h = self.state.house
+            print(f"Available Cash: ${p.cash:.2f} | Energy: {p.energy:.1f}/{p.max_energy}")
+            print("-" * 50)
+            print("What would you like to do tonight?")
+            print("1. Visit the local Tavern (Costs 15 Energy - socialize & recruit)")
+            if h.purchased:
+                print("2. Rest at home (+15 Energy, costs $0)")
+            print("3. Go to sleep (End day and advance to next morning)")
+            
+            opt = input("\nSelect: ").strip()
+            if opt == '1':
+                if p.energy < 15:
+                    print(Fore.RED + "You are too exhausted to go out tonight!")
+                    input("\nPress Enter...")
+                else:
+                    p.adjust_energy(-15)
+                    self.menu_bar()
+            elif opt == '2' and h.purchased:
+                p.adjust_energy(15.0)
+                print(Fore.GREEN + "You spent a relaxing evening at home. (+15 Energy)")
+                input("\nPress Enter...")
+            elif opt == '3':
+                break
+            else:
+                print(Fore.RED + "Invalid choice.")
+                input("\nPress Enter...")
         
         # Check and trigger random events BEFORE sleep
         triggered_event = self.state.events.check_and_trigger_event(self.state)
@@ -608,6 +654,167 @@ class GameLoop:
 
         print("\nPress Enter to sleep and start the next day...")
         input()
+
+    def menu_bar(self) -> None:
+        p = self.state.player
+        r = self.state.restaurant
+        rom = self.state.romance
+        es = self.state.employees
+
+        while True:
+            self.clear_screen()
+            self.print_header("Oakhaven Tavern", Fore.MAGENTA)
+            print(f"Energy: {p.energy:.1f}/{p.max_energy} | Cash: ${p.cash:.2f}")
+            print(f"Day: {self.state.day_name}")
+            print("-" * 50)
+            
+            # Show who is at the bar today
+            girls = rom.get_characters_available(self.state.day_name)
+            candidates = es.candidates
+            
+            print(Fore.MAGENTA + "🌹 Socializing & Dating:")
+            if not girls:
+                print("  The tavern is quiet. No girls you know are here tonight.")
+            else:
+                for i, g in enumerate(girls, 1):
+                    rel_str = ""
+                    if rom.active_partner_name == g.name:
+                        rel_str = " (Your Partner)"
+                        if g.is_co_owner:
+                            rel_str = " (Partner & Co-Owner)"
+                    print(f"  {i}. {g.name} the {g.archetype} | Romance: {g.romance_level:.1f}/100.0{rel_str}")
+                    print(f"     '{g.description}'")
+            print()
+            
+            print(Fore.CYAN + "👥 Staffing Candidates:")
+            if not candidates:
+                print("  No job applicants hanging out tonight.")
+            else:
+                for i, c in enumerate(candidates, 1 + len(girls)):
+                    print(f"  {i}. {c.name} | Skill: {c.skill:.2f} | Reliability: {c.reliability:.2f} | Salary: ${c.daily_salary:.2f}/day | Exp: {c.experience} yrs")
+            print("-" * 50)
+            
+            print("Select a number to interact, or 'B' to leave: ")
+            ans = input().strip().lower()
+            if ans == 'b':
+                break
+                
+            try:
+                idx = int(ans)
+                # Check if they selected a girl
+                if 1 <= idx <= len(girls):
+                    self.interact_bar_girl(girls[idx - 1])
+                # Check if they selected a candidate
+                elif len(girls) < idx <= len(girls) + len(candidates):
+                    target_candidate = candidates[idx - len(girls) - 1]
+                    self.interact_bar_candidate(target_candidate)
+                else:
+                    print(Fore.RED + "Invalid number.")
+                    input("Press Enter...")
+            except ValueError:
+                print(Fore.RED + "Please enter a valid choice.")
+                input("Press Enter...")
+
+    def interact_bar_girl(self, girl: Any) -> None:
+        p = self.state.player
+        rom = self.state.romance
+        h = self.state.house
+        
+        while True:
+            self.clear_screen()
+            self.print_header(f"Talking to {girl.name}", Fore.MAGENTA)
+            print(f"Archetype: {girl.archetype} | Romance: {girl.romance_level:.1f}/100.0")
+            print(f"Energy: {p.energy:.1f}/{p.max_energy} | Cash: ${p.cash:.2f}")
+            print("-" * 50)
+            
+            print("1. Talk to her (Costs 10 Energy)")
+            print("2. Buy her a drink (Costs $25.00, 10 Energy)")
+            if not girl.is_partner and not girl.is_co_owner:
+                print("3. Ask her to be your Partner (Propose Relationship, requires >=40 Romance)")
+            elif girl.is_partner and not girl.is_co_owner:
+                print("3. Propose Marriage & Co-Ownership (Requires >=75 Romance and House)")
+                print("4. Break Up")
+            elif girl.is_co_owner:
+                print("3. Speak about your shared life")
+                
+            print("B. Back")
+            
+            choice = input("\nSelect: ").strip().lower()
+            if choice == 'b':
+                break
+            elif choice == '1':
+                if p.energy < 10:
+                    print(Fore.RED + "Too tired to talk!")
+                else:
+                    p.adjust_energy(-10)
+                    dialogue, gain = girl.interact_talk()
+                    print(Fore.GREEN + dialogue)
+                input("\nPress Enter...")
+            elif choice == '2':
+                if p.cash < 25.0:
+                    print(Fore.RED + "Not enough cash to buy a drink!")
+                elif p.energy < 10:
+                    print(Fore.RED + "Too tired!")
+                else:
+                    p.adjust_cash(-25.0)
+                    p.adjust_energy(-10)
+                    self.state.finance.record_transaction("Date", 25.0, f"Bought drink for {girl.name}")
+                    dialogue, gain = girl.interact_drink(25.0)
+                    print(Fore.GREEN + dialogue)
+                input("\nPress Enter...")
+            elif choice == '3':
+                if not girl.is_partner and not girl.is_co_owner:
+                    if p.energy < 10:
+                        print(Fore.RED + "Too tired!")
+                    else:
+                        p.adjust_energy(-10)
+                        success, msg = rom.propose_relationship(girl.name)
+                        if success:
+                            print(Fore.GREEN + msg)
+                        else:
+                            print(Fore.RED + msg)
+                    input("\nPress Enter...")
+                elif girl.is_partner and not girl.is_co_owner:
+                    if p.energy < 10:
+                        print(Fore.RED + "Too tired!")
+                    else:
+                        p.adjust_energy(-10)
+                        success, msg = rom.ask_to_co_own(h.purchased)
+                        if success:
+                            print(Fore.GREEN + msg)
+                        else:
+                            print(Fore.RED + msg)
+                    input("\nPress Enter...")
+                elif girl.is_co_owner:
+                    print(Fore.GREEN + f"{girl.name} kisses you. 'Let's keep building our life together, darling.'")
+                    input("\nPress Enter...")
+            elif choice == '4' and girl.is_partner and not girl.is_co_owner:
+                confirm = input(f"Are you sure you want to break up with {girl.name}? (y/n): ").lower()
+                if confirm == 'y':
+                    success, msg = rom.break_up()
+                    print(Fore.GREEN + msg)
+                    break
+
+    def interact_bar_candidate(self, candidate: Any) -> None:
+        p = self.state.player
+        es = self.state.employees
+        r = self.state.restaurant
+        
+        self.clear_screen()
+        self.print_header(f"Recruiting {candidate.name}")
+        print(f"Skill: {candidate.skill:.2f} | Reliability: {candidate.reliability:.2f}")
+        print(f"Salary Requirement: ${candidate.daily_salary:.2f}/day")
+        print(f"Experience: {candidate.experience} years")
+        print("-" * 50)
+        
+        choice = input(f"Do you want to hire {candidate.name}? (y/n): ").lower()
+        if choice == 'y':
+            success, msg = es.hire_employee(candidate.name, r.current_config.max_employees)
+            if success:
+                print(Fore.GREEN + msg)
+            else:
+                print(Fore.RED + msg)
+        input("\nPress Enter to return...")
 
     def handle_triggered_event(self, event: Any) -> None:
         self.clear_screen()

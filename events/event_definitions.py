@@ -122,35 +122,36 @@ def get_default_events() -> list[GameEvent]:
         trigger_condition=lambda state: state.restaurant.level == 4
     ))
 
-    # 4. Valerie's Greenhouse Leak
+    # 4. Partner's Greenhouse Leak
     def valerie_fix_action(state):
+        p = state.romance.partner
+        name = p.name if p else "partner"
         state.player.adjust_cash(-150)
         state.player.adjust_energy(-30)
         state.romance.romance_level = min(100.0, state.romance.romance_level + 20)
-        state.romance.update_stage()
-        state.finance.record_transaction("Date", -150, "Helped Valerie fix greenhouse")
+        state.finance.record_transaction("Date", -150, f"Helped {name} fix greenhouse")
 
     def valerie_rep_action(state):
+        p = state.romance.partner
+        name = p.name if p else "partner"
         state.player.adjust_cash(-80)
         state.romance.romance_level = min(100.0, state.romance.romance_level + 8)
-        state.romance.update_stage()
-        state.finance.record_transaction("Date", -80, "Paid repairman for Valerie")
+        state.finance.record_transaction("Date", -80, f"Paid repairman for {name}")
 
     def valerie_busy_action(state):
         state.romance.romance_level = max(0.0, state.romance.romance_level - 15)
-        state.romance.update_stage()
 
     events.append(GameEvent(
         id="valerie_greenhouse",
         title="Greenhouse Leak",
         description=(
-            "Valerie calls you, distressed. A pipe burst in her flower greenhouse, "
+            "Your partner calls you, distressed. A pipe burst in her flower greenhouse, "
             "threatening her rare exotic orchids. She needs help repairing it and buying replacement supplies."
         ),
         options=[
             EventOption(
                 text="Go help her personally (Costs $150, 30 Energy, ++Romance)",
-                outcome_text="You spend hours in the damp greenhouse, sealing pipes and saving the flowers. Valerie is deeply touched. (+20 Romance, -30 Energy, -$150)",
+                outcome_text="You spend hours in the damp greenhouse, sealing pipes and saving the flowers. She is deeply touched. (+20 Romance, -30 Energy, -$150)",
                 action=valerie_fix_action,
                 condition=lambda state: state.player.cash >= 150 and state.player.energy >= 30
             ),
@@ -166,7 +167,7 @@ def get_default_events() -> list[GameEvent]:
                 action=valerie_busy_action
             )
         ],
-        trigger_condition=lambda state: state.restaurant.level >= 4 and state.romance.romance_level >= 25 and not state.romance.is_co_owner
+        trigger_condition=lambda state: state.restaurant.level >= 4 and state.romance.partner is not None and state.romance.romance_level >= 25 and not state.romance.partner.is_co_owner
     ))
 
     # 5. Sebastian's Smear Campaign
