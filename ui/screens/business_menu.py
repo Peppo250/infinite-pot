@@ -206,8 +206,9 @@ class BusinessMenuScreen(QWidget):
 
     def on_borrow_loan(self):
         p = self.state.player
-        ratio = self.state.loans.max_loan_ratio
-        max_borrow = max(0.0, (p.cash + self.state.restaurant.level * 500) * ratio - self.state.loans.outstanding_balance)
+        r = self.state.restaurant
+        loan = self.state.loan
+        max_borrow = loan.get_available_borrow_amount(r.level)
         if max_borrow <= 0:
             ConfirmDialog("Bank Limit", "You have reached your maximum borrowing limit based on assets.", self).exec()
             return
@@ -215,15 +216,19 @@ class BusinessMenuScreen(QWidget):
         dlg = LoanDialog("borrow", max_borrow, self)
         if dlg.exec():
             amount = dlg.get_amount()
-            self.state.loans.borrow(amount)
-            p.adjust_cash(amount)
-            self.state.finance.record_transaction("Loan", amount, "Borrowed bank loan")
-            self.update_ui()
-            self.state_changed.emit()
+            success, msg = loan.borrow(amount, r.level)
+            if success:
+                p.adjust_cash(amount)
+                self.state.finance.record_transaction("Loan", amount, "Borrowed bank loan")
+                self.update_ui()
+                self.state_changed.emit()
+            else:
+                ConfirmDialog("Transaction Refused", msg, self).exec()
 
     def on_repay_loan(self):
         p = self.state.player
-        bal = self.state.loans.outstanding_balance
+        loan = self.state.loan
+        bal = loan.balance
         if bal <= 0:
             ConfirmDialog("Debt Free", "You do not have any outstanding loan balance to repay.", self).exec()
             return
@@ -236,11 +241,14 @@ class BusinessMenuScreen(QWidget):
         dlg = LoanDialog("repay", max_repay, self)
         if dlg.exec():
             amount = dlg.get_amount()
-            self.state.loans.repay(amount)
-            p.adjust_cash(-amount)
-            self.state.finance.record_transaction("Loan", amount, "Repaid bank loan")
-            self.update_ui()
-            self.state_changed.emit()
+            success, msg, cash_spent = loan.pay_loan(amount, p.cash)
+            if success:
+                p.adjust_cash(-cash_spent)
+                self.state.finance.record_transaction("Loan", cash_spent, "Repaid bank loan")
+                self.update_ui()
+                self.state_changed.emit()
+            else:
+                ConfirmDialog("Transaction Refused", msg, self).exec()
 
     def on_counter_marketing(self):
         p = self.state.player
@@ -283,7 +291,7 @@ class BusinessMenuScreen(QWidget):
         p = self.state.player
         r = self.state.restaurant
         es = self.state.employees
-        loans = self.state.loans
+        loans = self.state.loan
         c = self.state.competitor
         
         # 1. Update Pricing Tab Info
@@ -372,11 +380,10 @@ class BusinessMenuScreen(QWidget):
             
         # 3. Update Loans Tab Info
         self.loans_lbl.setText(
-            f"Outstanding Balance: ${loans.outstanding_balance:.2f}\n"
-            f"Interest Rate: {loans.annual_interest_rate*100:.1f}% APR (${loans.outstanding_balance*(loans.annual_interest_rate/365.0):.2f}/day accrue)\n"
-            f"Daily Minimum Payment Requirement: ${loans.calculate_daily_minimum_payment():.2f}/day"
+            f"Outstanding Balance: ${loans.balance:.2f}\n"
+            f"Interest Rate: {loans.interest_rate_annual*100:.1f}% APR (${loans.balance*(loans.interest_rate_annual/365.0):.2f}/day accrue)"
         )
-        self.repay_btn.setEnabled(loans.outstanding_balance > 0 and p.cash > 0)
+        self.repay_btn.setEnabled(loans.balance > 0 and p.cash > 0)
         
         # 4. Update Marketing Tab Info
         if c.is_active:
