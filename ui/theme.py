@@ -152,13 +152,13 @@ class ThemeManager:
                 background-color: white;
                 border: 4px solid {cls.DARK_BROWN};
                 border-radius: 0px;
-                padding: 15px;
+                padding: 8px;
             }}
             
             QFrame#hud-bar {{
                 background-color: {cls.WARM_BEIGE};
                 border-bottom: 4px solid {cls.DARK_BROWN};
-                padding: 6px;
+                padding: 4px;
             }}
             
             QScrollArea {{

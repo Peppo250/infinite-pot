@@ -14,8 +14,8 @@ class TavernMenuScreen(QWidget):
         self.state = state
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(15, 10, 15, 10)
+        main_layout.setSpacing(10)
         
         # Header
         header_layout = QHBoxLayout()
@@ -25,13 +25,14 @@ class TavernMenuScreen(QWidget):
         
         self.title = QLabel("Oakhaven Tavern", self)
         self.title.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        header_layout.addWidget(self.title, alignment=Qt.AlignRight)
         main_layout.addLayout(header_layout)
         
-        # Tavern Pixel Art Banner
+        # Tavern Pixel Art Banner (Scaled down for vertical space)
         self.banner_img = QLabel(self)
         self.banner_img.setStyleSheet(f"border: 4px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
         pixmap = QPixmap("assets/images/tavern_bg.jpg")
-        self.banner_img.setPixmap(pixmap.scaled(960, 140, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation))
+        self.banner_img.setPixmap(pixmap.scaled(960, 95, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation))
         main_layout.addWidget(self.banner_img, alignment=Qt.AlignCenter)
         
         # Split layout
@@ -226,7 +227,12 @@ class TavernMenuScreen(QWidget):
                 g_frame.setObjectName("card-frame")
                 
                 g_layout = QHBoxLayout(g_frame)
+                g_layout.setContentsMargins(6, 6, 6, 6)
+                g_layout.setSpacing(10)
+                
                 g_lbl_layout = QVBoxLayout()
+                g_lbl_layout.setContentsMargins(0, 0, 0, 0)
+                g_lbl_layout.setSpacing(2)
                 
                 rel_str = ""
                 if self.state.romance.active_partner_name == g.name:
@@ -236,13 +242,13 @@ class TavernMenuScreen(QWidget):
                 
                 name_lbl = QLabel(f"<b>{g.name}</b> ({g.archetype}){rel_str}", self)
                 desc_lbl = QLabel(f"'{g.description}'", self)
-                desc_lbl.setStyleSheet("font-size: 11px; color: #555555; font-style: italic;")
+                desc_lbl.setStyleSheet("font-size: 14px; color: #555555; font-style: italic;")
                 
                 rom_bar = QProgressBar(self)
                 rom_bar.setRange(0, 100)
                 rom_bar.setValue(int(g.romance_level))
                 rom_bar.setFormat("Romance: %v/100")
-                rom_bar.setStyleSheet("height: 14px; font-size: 10px;")
+                rom_bar.setStyleSheet("height: 14px; font-size: 14px;")
                 
                 g_lbl_layout.addWidget(name_lbl)
                 g_lbl_layout.addWidget(desc_lbl)
@@ -277,7 +283,12 @@ class TavernMenuScreen(QWidget):
                 c_frame.setObjectName("card-frame")
                 
                 c_layout = QHBoxLayout(c_frame)
+                c_layout.setContentsMargins(6, 6, 6, 6)
+                c_layout.setSpacing(10)
+                
                 c_lbl_layout = QVBoxLayout()
+                c_lbl_layout.setContentsMargins(0, 0, 0, 0)
+                c_lbl_layout.setSpacing(2)
                 
                 name_lbl = QLabel(f"<b>{c.name}</b>", self)
                 stats_lbl = QLabel(
@@ -285,7 +296,7 @@ class TavernMenuScreen(QWidget):
                     f"Wage: <b>${c.daily_salary:.2f}/day</b> | Exp: {c.experience} yrs",
                     self
                 )
-                stats_lbl.setStyleSheet("font-size: 12px; color: #555555;")
+                stats_lbl.setStyleSheet("font-size: 14px; color: #555555;")
                 
                 c_lbl_layout.addWidget(name_lbl)
                 c_lbl_layout.addWidget(stats_lbl)
@@ -294,7 +305,6 @@ class TavernMenuScreen(QWidget):
                 
                 hire_btn = QPushButton("Hire", self)
                 hire_btn.setObjectName("primary-action-btn")
-                # Disable if restaurant already at capacity
                 max_emp = self.state.restaurant.current_config.max_employees
                 hire_btn.setEnabled(len(self.state.employees.hired) < max_emp)
                 hire_btn.clicked.connect(lambda checked=False, target_cand=c: self.hire_candidate(target_cand))

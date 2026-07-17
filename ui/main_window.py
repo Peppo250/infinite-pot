@@ -95,70 +95,68 @@ class MainWindow(QMainWindow):
     def init_hud_bar(self):
         self.hud_bar = QFrame(self)
         self.hud_bar.setObjectName("hud-bar")
+        
         hud_layout = QHBoxLayout(self.hud_bar)
-        hud_layout.setContentsMargins(15, 8, 15, 8)
-        hud_layout.setSpacing(20)
+        hud_layout.setContentsMargins(10, 4, 10, 4)
+        hud_layout.setSpacing(10)
         
-        # Left side: Shop Name, Day, Cash
-        left_layout = QHBoxLayout()
-        self.shop_name_lbl = QLabel("Shop Name", self)
-        self.shop_name_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
-        left_layout.addWidget(self.shop_name_lbl)
+        # 1. Shop Name
+        self.shop_name_lbl = QLabel(self)
+        self.shop_name_lbl.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        hud_layout.addWidget(self.shop_name_lbl)
         
-        left_layout.addSpacing(10)
+        # 2. Calendar / Phase
+        self.day_lbl = QLabel(self)
+        self.day_lbl.setStyleSheet("font-size: 18px; font-weight: bold;")
+        hud_layout.addWidget(self.day_lbl)
         
-        self.day_lbl = QLabel("Day 1 (Mon)", self)
-        self.day_lbl.setObjectName("hud-label")
-        left_layout.addWidget(self.day_lbl)
+        # 3. Cash
+        self.cash_lbl = QLabel(self)
+        self.cash_lbl.setStyleSheet(f"font-size: 19px; font-weight: bold; color: #4F6F52;")
+        hud_layout.addWidget(self.cash_lbl)
         
-        left_layout.addSpacing(10)
-        
-        self.cash_lbl = QLabel("$0.00", self)
-        self.cash_lbl.setStyleSheet(f"font-size: 17px; font-weight: bold; color: #4F6F52;") # green accent for money
-        left_layout.addWidget(self.cash_lbl)
-        
-        hud_layout.addLayout(left_layout)
-        
-        # Center: Energy Bar & Reputation
-        center_layout = QHBoxLayout()
-        center_layout.setSpacing(15)
-        
-        # Energy
-        energy_lbl = QLabel("Energy:", self)
-        energy_lbl.setObjectName("hud-label")
-        center_layout.addWidget(energy_lbl)
-        
+        # 4. Energy
+        energy_widget = QWidget(self)
+        energy_layout = QHBoxLayout(energy_widget)
+        energy_layout.setContentsMargins(0, 0, 0, 0)
+        energy_layout.setSpacing(5)
+        e_lbl = QLabel("Energy:", self)
+        e_lbl.setStyleSheet("font-size: 16px; font-weight: bold;")
         self.energy_bar = QProgressBar(self)
         self.energy_bar.setRange(0, 100)
-        self.energy_bar.setValue(100)
-        self.energy_bar.setMaximumWidth(120)
-        self.energy_bar.setStyleSheet("""
-            QProgressBar::chunk { background-color: #E25E3E; }
-        """)
-        center_layout.addWidget(self.energy_bar)
+        self.energy_bar.setMaximumWidth(80)
+        self.energy_bar.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
+        energy_layout.addWidget(e_lbl)
+        energy_layout.addWidget(self.energy_bar)
+        hud_layout.addWidget(energy_widget)
         
-        # Reputation
-        rep_lbl = QLabel("Reputation:", self)
-        rep_lbl.setObjectName("hud-label")
-        center_layout.addWidget(rep_lbl)
-        
+        # 5. Reputation
+        rep_widget = QWidget(self)
+        rep_layout = QHBoxLayout(rep_widget)
+        rep_layout.setContentsMargins(0, 0, 0, 0)
+        rep_layout.setSpacing(5)
+        r_lbl = QLabel("Rep:", self)
+        r_lbl.setStyleSheet("font-size: 16px; font-weight: bold;")
         self.rep_bar = QProgressBar(self)
         self.rep_bar.setRange(0, 100)
-        self.rep_bar.setValue(20)
-        self.rep_bar.setFormat("%v/100")
-        self.rep_bar.setMaximumWidth(120)
-        self.rep_bar.setStyleSheet("""
-            QProgressBar::chunk { background-color: #82A0D8; }
-        """)
-        center_layout.addWidget(self.rep_bar)
+        self.rep_bar.setMaximumWidth(80)
+        self.rep_bar.setStyleSheet("QProgressBar::chunk { background-color: #82A0D8; }")
+        rep_layout.addWidget(r_lbl)
+        rep_layout.addWidget(self.rep_bar)
+        hud_layout.addWidget(rep_widget)
         
-        hud_layout.addLayout(center_layout)
+        # 6. Partner
+        self.partner_lbl = QLabel(self)
+        self.partner_lbl.setStyleSheet(f"font-size: 18px; color: {ThemeManager.DARK_BROWN}; font-weight: bold;")
+        hud_layout.addWidget(self.partner_lbl)
         
-        # Right side: Partner Info
-        self.partner_lbl = QLabel("Single", self)
-        self.partner_lbl.setObjectName("hud-label")
-        self.partner_lbl.setStyleSheet("font-style: italic; color: #555555;")
-        hud_layout.addWidget(self.partner_lbl, alignment=Qt.AlignRight)
+        # Stretch columns equally
+        hud_layout.setStretch(0, 2)
+        hud_layout.setStretch(1, 3)
+        hud_layout.setStretch(2, 2)
+        hud_layout.setStretch(3, 2)
+        hud_layout.setStretch(4, 2)
+        hud_layout.setStretch(5, 2)
 
     def animate_switch(self, target_index: int):
         self.stacked_opacity = QGraphicsOpacityEffect(self.stacked_widget)
@@ -372,21 +370,22 @@ class MainWindow(QMainWindow):
         r = self.state.restaurant
         rom = self.state.romance
         
-        self.shop_name_lbl.setText(r.name)
-        self.day_lbl.setText(f"Day {self.state.day} ({self.state.day_name})")
-        self.cash_lbl.setText(f"${p.cash:.2f}")
+        self.shop_name_lbl.setText(f"🏰 {r.name} (Lvl {r.level})")
+        phase_str = "Evening" if self.evening_phase else "Prep"
+        self.day_lbl.setText(f"📅 Day {self.state.day} ({self.state.day_name}) • {phase_str}")
+        self.cash_lbl.setText(f"💰 ${p.cash:.2f}")
         
         self.energy_bar.setValue(max(0, min(100, int(p.energy))))
-        self.energy_bar.setFormat(f"Energy: {p.energy:.0f}/{p.max_energy}")
+        self.energy_bar.setFormat(f"%v/%m")
         
         self.rep_bar.setValue(max(0, min(100, int(r.reputation))))
+        self.rep_bar.setFormat(f"%v/100")
         
         partner = rom.partner
         if not partner:
-            self.partner_lbl.setText("Single")
+            self.partner_lbl.setText("👤 Single")
         else:
-            rel = rom.stage_name
-            self.partner_lbl.setText(f"🌹 {partner.name} ({rel})")
+            self.partner_lbl.setText(f"🌹 {partner.name}")
             
         # Re-verify and refresh current active screen content
         if self.stacked_widget.currentIndex() == 1:

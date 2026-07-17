@@ -16,8 +16,8 @@ class GameplayScreen(QWidget):
         self.state = state
         
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(25)
+        main_layout.setContentsMargins(15, 10, 15, 10)
+        main_layout.setSpacing(15)
         
         # LEFT COLUMN: Business Operations
         left_layout = QVBoxLayout()

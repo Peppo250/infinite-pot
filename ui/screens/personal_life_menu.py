@@ -15,8 +15,8 @@ class PersonalLifeScreen(QWidget):
         self.state = state
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(15, 10, 15, 10)
+        main_layout.setSpacing(10)
         
         # Header with Back button
         header_layout = QHBoxLayout()
@@ -31,13 +31,13 @@ class PersonalLifeScreen(QWidget):
         
         # Split layout for Romance and House
         split_layout = QHBoxLayout()
-        split_layout.setSpacing(20)
+        split_layout.setSpacing(12)
         
         # LEFT COLUMN: Romance & Relationships
         self.romance_card = QFrame(self)
         self.romance_card.setObjectName("card-frame")
         self.rom_layout = QVBoxLayout(self.romance_card)
-        self.rom_layout.setSpacing(12)
+        self.rom_layout.setSpacing(8)
         
         rom_title = QLabel("🌹 Dating & Romance", self)
         rom_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")

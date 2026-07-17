@@ -14,8 +14,8 @@ class BusinessMenuScreen(QWidget):
         self.state = state
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(15, 10, 15, 10)
+        main_layout.setSpacing(10)
         
         # Header with Back button
         header_layout = QHBoxLayout()
