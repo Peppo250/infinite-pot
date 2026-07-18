@@ -126,9 +126,18 @@ class GameState:
         else:
             potential_customers = 0
             
-        # 3. Calculate player energy cost & capacity
+        # 3. Calculate player energy cost & capacity (takes more energy in lower levels, decreases as you hire more people)
         player_capacity = player_work_hours * 3
-        player_energy_cost = player_work_hours * self.player.work_energy_cost_per_hour
+        
+        level_mults = {0: 1.5, 1: 1.3, 2: 1.1, 3: 0.9, 4: 0.7}
+        level_mult = level_mults.get(self.restaurant.level, 1.0)
+        
+        staff_count = len(active_employees)
+        staff_mults = {0: 1.0, 1: 0.8, 2: 0.65, 3: 0.5}
+        staff_mult = staff_mults.get(staff_count, 0.5 if staff_count > 3 else 1.0)
+        
+        hourly_energy_cost = self.player.work_energy_cost_per_hour * level_mult * staff_mult
+        player_energy_cost = player_work_hours * hourly_energy_cost
         self.player.adjust_energy(-player_energy_cost)
         
         # 4. Calculate employees capacity (they work up to min(8, open_hours))

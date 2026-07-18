@@ -236,8 +236,8 @@ def test_game_state_sim() -> None:
     
     # Run a business day where player works 4 hours
     sim = state.simulate_business_day(player_work_hours=4)
-    assert sim["energy_spent"] == 20.0
-    assert state.player.energy == 80.0
+    assert sim["energy_spent"] == 30.0
+    assert state.player.energy == 70.0
     assert state.player.days_worked == 1
     
     # Advance the day
