@@ -27,8 +27,8 @@
     },
     "2": {
       "name": "Own Roadside Cart",
-      "upgrade_cost": 200.0,
-      "daily_maintenance": 12.0,
+      "upgrade_cost": 300.0,
+      "daily_maintenance": 25.0,
       "customer_capacity": 32,
       "max_employees": 0,
       "price_per_meal_range": [5.0, 9.0],
@@ -36,8 +36,8 @@
     },
     "3": {
       "name": "Edge-of-Town Shop",
-      "upgrade_cost": 600.0,
-      "daily_maintenance": 40.0,
+      "upgrade_cost": 900.0,
+      "daily_maintenance": 80.0,
       "customer_capacity": 50,
       "max_employees": 1,
       "price_per_meal_range": [8.0, 14.0],
@@ -45,8 +45,8 @@
     },
     "4": {
       "name": "Town Restaurant",
-      "upgrade_cost": 1500.0,
-      "daily_maintenance": 110.0,
+      "upgrade_cost": 2500.0,
+      "daily_maintenance": 220.0,
       "customer_capacity": 90,
       "max_employees": 3,
       "price_per_meal_range": [12.0, 26.0],

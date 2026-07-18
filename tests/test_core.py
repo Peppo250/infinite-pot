@@ -309,13 +309,6 @@ def test_high_end_upgrades_and_wedding() -> None:
     success, msg = rom.ask_to_co_own(has_house=True)
     assert success is True
     assert rom.is_co_owner is True
-    
-    # 4. Test Wedding Ceremony attributes
-    assert rom.wedding_tier == "None"
-    rom.wedding_tier = "Royal"
-    r.adjust_reputation(60.0)
-    assert rom.wedding_tier == "Royal"
-    assert r.reputation >= 60.0
 
 def test_ui_theme_manager() -> None:
     from ui.theme import ThemeManager

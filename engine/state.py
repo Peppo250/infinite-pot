@@ -168,6 +168,23 @@ class GameState:
         self.restaurant.meals_served_today = actual_served
         self.restaurant.revenue_today = total_income
         
+        # Automatic Bank Loan Repayment from daily sales (percentage increases as you upgrade restaurant)
+        loan_payment = 0.0
+        if self.loan.balance > 0.0 and total_income > 0.0:
+            rates = {0: 0.05, 1: 0.07, 2: 0.10, 3: 0.15, 4: 0.20}
+            pct = rates.get(self.restaurant.level, 0.05)
+            deduction = round(total_income * pct, 2)
+            
+            # Cap deduction at current balance
+            if deduction > self.loan.balance:
+                deduction = self.loan.balance
+                
+            # Perform payment
+            success, msg, loan_payment = self.loan.pay_loan(deduction, self.player.cash)
+            if success and loan_payment > 0.0:
+                self.player.adjust_cash(-loan_payment)
+                self.finance.record_transaction("Loan Interest", loan_payment, f"Auto-repayment from sales ({int(pct*100)}%)")
+        
         # Record transactions
         if revenue > 0:
             self.finance.record_transaction("Revenue", revenue, f"Served {actual_served} meals")

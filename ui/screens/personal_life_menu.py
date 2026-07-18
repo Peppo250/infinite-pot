@@ -8,7 +8,6 @@ from ui.dialogs.custom_dialogs import ConfirmDialog
 class PersonalLifeScreen(QWidget):
     go_back = Signal()
     state_changed = Signal()  # Emitted when upgrades or relationships shift
-    open_wedding_planner = Signal()
     
     def __init__(self, state, parent=None):
         super().__init__(parent)
@@ -66,11 +65,6 @@ class PersonalLifeScreen(QWidget):
         self.propose_btn = QPushButton("Propose Marriage & Co-Ownership", self)
         self.propose_btn.clicked.connect(self.on_propose)
         self.rom_layout.addWidget(self.propose_btn)
-        
-        self.wedding_btn = QPushButton("💒 Plan and Host Wedding Ceremony", self)
-        self.wedding_btn.setObjectName("primary-action-btn")
-        self.wedding_btn.clicked.connect(self.open_wedding_planner.emit)
-        self.rom_layout.addWidget(self.wedding_btn)
         
         self.break_btn = QPushButton("Break Up", self)
         self.break_btn.setObjectName("quit-btn")
@@ -225,7 +219,6 @@ class PersonalLifeScreen(QWidget):
             self.date_btn.setVisible(False)
             self.ring_btn.setVisible(False)
             self.propose_btn.setVisible(False)
-            self.wedding_btn.setVisible(False)
             self.break_btn.setVisible(False)
         else:
             self.rom_progress.setVisible(True)
@@ -242,21 +235,16 @@ class PersonalLifeScreen(QWidget):
                 self.propose_btn.setVisible(True)
                 self.propose_btn.setEnabled(False)
                 self.propose_btn.setText("Propose Marriage (Requires House & Ring)")
-                self.wedding_btn.setVisible(False)
             else:
                 if not rom.is_co_owner:
                     self.ring_btn.setVisible(not rom.has_ring)
                     self.propose_btn.setVisible(True)
                     self.propose_btn.setEnabled(rom.has_ring and partner.romance_level >= 75.0)
                     self.propose_btn.setText("Propose Marriage & Co-Ownership" + ("" if rom.has_ring else " (Needs Ring)"))
-                    self.wedding_btn.setVisible(False)
                 else:
                     self.ring_btn.setVisible(False)
                     self.propose_btn.setVisible(False)
-                    self.wedding_btn.setVisible(rom.wedding_tier == "None")
                     status_text += f"<font color='#8ADAB2'>💚 {partner.name} lives with you and co-owns the restaurant!</font>"
-                    if rom.wedding_tier != "None":
-                        status_text += f"<br/>Wedding: <b>{rom.wedding_tier} Ceremony</b> hosted!"
                         
             self.rom_lbl.setText(status_text)
             

@@ -81,7 +81,7 @@ class FinancialSystem:
         report.append("-" * 40)
         report.append(f"  Wages:                 -${dl.wages:8.2f}")
         report.append(f"  Maintenance:           -${dl.maintenance:8.2f}")
-        report.append(f"  Loan Interest:         -${dl.loan_interest:8.2f}")
+        report.append(f"  Loan Repay/Interest:   -${dl.loan_interest:8.2f}")
         if dl.marketing > 0:
             report.append(f"  Counter-Marketing:     -${dl.marketing:8.2f}")
         if dl.dates > 0:

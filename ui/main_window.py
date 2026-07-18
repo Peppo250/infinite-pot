@@ -78,7 +78,6 @@ class MainWindow(QMainWindow):
         
         self.personal_life_screen.go_back.connect(self.show_gameplay)
         self.personal_life_screen.state_changed.connect(self.update_hud)
-        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)
         
         self.tavern_screen.go_back.connect(self.show_gameplay)
         self.tavern_screen.state_changed.connect(self.update_hud)
@@ -102,17 +101,17 @@ class MainWindow(QMainWindow):
         
         # 1. Shop Name
         self.shop_name_lbl = QLabel(self)
-        self.shop_name_lbl.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.shop_name_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.shop_name_lbl)
         
         # 2. Calendar / Phase
         self.day_lbl = QLabel(self)
-        self.day_lbl.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.day_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.day_lbl)
         
         # 3. Cash
         self.cash_lbl = QLabel(self)
-        self.cash_lbl.setStyleSheet(f"font-size: 19px; font-weight: bold; color: #4F6F52;")
+        self.cash_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #3A5F43;")
         hud_layout.addWidget(self.cash_lbl)
         
         # 4. Energy
@@ -121,7 +120,7 @@ class MainWindow(QMainWindow):
         energy_layout.setContentsMargins(0, 0, 0, 0)
         energy_layout.setSpacing(5)
         e_lbl = QLabel("Energy:", self)
-        e_lbl.setStyleSheet("font-size: 16px; font-weight: bold;")
+        e_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.energy_bar = QProgressBar(self)
         self.energy_bar.setRange(0, 100)
         self.energy_bar.setMaximumWidth(80)
@@ -136,7 +135,7 @@ class MainWindow(QMainWindow):
         rep_layout.setContentsMargins(0, 0, 0, 0)
         rep_layout.setSpacing(5)
         r_lbl = QLabel("Rep:", self)
-        r_lbl.setStyleSheet("font-size: 16px; font-weight: bold;")
+        r_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.rep_bar = QProgressBar(self)
         self.rep_bar.setRange(0, 100)
         self.rep_bar.setMaximumWidth(80)
@@ -147,7 +146,7 @@ class MainWindow(QMainWindow):
         
         # 6. Partner
         self.partner_lbl = QLabel(self)
-        self.partner_lbl.setStyleSheet(f"font-size: 18px; color: {ThemeManager.DARK_BROWN}; font-weight: bold;")
+        self.partner_lbl.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN}; font-weight: bold;")
         hud_layout.addWidget(self.partner_lbl)
         
         # Stretch columns equally
@@ -261,7 +260,6 @@ class MainWindow(QMainWindow):
         self.business_screen.state_changed.connect(self.update_hud)
         self.personal_life_screen.go_back.connect(self.show_gameplay)
         self.personal_life_screen.state_changed.connect(self.update_hud)
-        self.personal_life_screen.open_wedding_planner.connect(self.show_tavern)
         self.tavern_screen.go_back.connect(self.show_personal_life)
         self.tavern_screen.state_changed.connect(self.update_hud)
         
@@ -325,12 +323,10 @@ class MainWindow(QMainWindow):
         c = self.state.competitor
         if c.is_active:
             is_married = self.state.romance.is_co_owner
-            has_wedding = self.state.romance.wedding_tier != "None"
             
             if (self.state.restaurant.reputation >= 60.0 and 
                 self.state.romance.romance_level >= 80.0 and 
-                is_married and 
-                has_wedding):
+                is_married):
                 self.days_survived_competitor += 1
                 self.notification_manager.add_notification(
                     f"Survived rival smear campaign: {self.days_survived_competitor}/10 days", "success"
