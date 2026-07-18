@@ -8,6 +8,7 @@ from ui.dialogs.custom_dialogs import ConfirmDialog
 class PersonalLifeScreen(QWidget):
     go_back = Signal()
     state_changed = Signal()  # Emitted when upgrades or relationships shift
+    sleep_clicked = Signal()
     
     def __init__(self, state, parent=None):
         super().__init__(parent)
@@ -95,10 +96,15 @@ class PersonalLifeScreen(QWidget):
         self.house_lbl.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.house_layout.addWidget(self.house_lbl)
         
-        self.buy_house_btn = QPushButton("Purchase Cottage (-$4000.00)", self)
+        self.buy_house_btn = QPushButton("Purchase Cottage (-$2500.00)", self)
         self.buy_house_btn.setObjectName("primary-action-btn")
         self.buy_house_btn.clicked.connect(self.on_buy_house)
         self.house_layout.addWidget(self.buy_house_btn)
+        
+        self.sleep_btn = QPushButton("🛌 Go to Sleep & End Day", self)
+        self.sleep_btn.setObjectName("primary-action-btn")
+        self.sleep_btn.clicked.connect(self.sleep_clicked.emit)
+        self.house_layout.addWidget(self.sleep_btn)
         
         # Scroll area for house upgrades
         self.upgrades_lbl = QLabel("Available Home Furnishings & Addons:", self)

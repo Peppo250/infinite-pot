@@ -1,11 +1,11 @@
 # ui/main_window.py
 import sys
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect, QPushButton
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.widgets.notifications import NotificationManager
-from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog
+from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, OptionsDialog
 
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.gameplay import GameplayScreen
@@ -35,14 +35,38 @@ class MainWindow(QMainWindow):
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
         
+        # Real-time Simulation Clock variables
+        self.is_working = False
+        self.is_paused = False
+        self.active_hours_passed = 0
+        self.target_work_hours = 8
+        self.day_clock_timer = QTimer(self)
+        self.day_clock_timer.timeout.connect(self.on_game_clock_tick)
+        
+        # Places cycle list for bottom-right navigation
+        self.places_cycle = ["Home", "Restaurant", "Bar"]
+        self.current_place_idx = 1 # Start on Restaurant (Diner)
+        
         # 1. Top HUD Bar
         self.init_hud_bar()
         self.hud_bar.setVisible(False)  # Hidden on Main Menu
         self.main_layout.addWidget(self.hud_bar)
         
+        # Content horizontal layout (Stacked screen on left, Sidebar on right)
+        self.content_widget = QWidget(self)
+        self.content_layout = QHBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(0, 0, 0, 0)
+        self.content_layout.setSpacing(0)
+        
         # 2. Stacked Screen Layout
         self.stacked_widget = QStackedWidget(self)
-        self.main_layout.addWidget(self.stacked_widget)
+        self.content_layout.addWidget(self.stacked_widget, stretch=4)
+        
+        # 3. Sidebar Widget
+        self.sidebar_widget = self.init_sidebar_widget()
+        self.content_layout.addWidget(self.sidebar_widget, stretch=1)
+        
+        self.main_layout.addWidget(self.content_widget)
         
         # Instantiate Screens
         self.main_menu_screen = MainMenuScreen(self)
@@ -67,17 +91,12 @@ class MainWindow(QMainWindow):
         self.main_menu_screen.start_game.connect(self.on_start_game)
         self.main_menu_screen.quit_game.connect(self.close)
         
-        self.gameplay_screen.manage_business.connect(self.show_business)
-        self.gameplay_screen.personal_life.connect(self.show_personal_life)
-        self.gameplay_screen.restaurant_opened.connect(self.on_open_restaurant)
-        self.gameplay_screen.go_to_tavern.connect(self.on_visit_tavern)
-        self.gameplay_screen.sleep_clicked.connect(self.on_sleep_and_end_day)
-        
         self.business_screen.go_back.connect(self.show_gameplay)
         self.business_screen.state_changed.connect(self.update_hud)
         
         self.personal_life_screen.go_back.connect(self.show_gameplay)
         self.personal_life_screen.state_changed.connect(self.update_hud)
+        self.personal_life_screen.sleep_clicked.connect(self.on_sleep_and_end_day)
         
         self.tavern_screen.go_back.connect(self.show_gameplay)
         self.tavern_screen.state_changed.connect(self.update_hud)
@@ -195,33 +214,30 @@ class MainWindow(QMainWindow):
     def show_main_menu(self):
         UIAudio.play_music("home")
         self.hud_bar.setVisible(False)
+        self.sidebar_widget.setVisible(False)
         self.animate_switch(0)
 
     def show_gameplay(self):
-        UIAudio.play_music("hotel")
         self.hud_bar.setVisible(True)
-        self.gameplay_screen.update_ui(self.evening_phase)
+        self.sidebar_widget.setVisible(True)
+        self.update_place_screen()
         self.update_hud()
-        self.animate_switch(1)
 
     def show_business(self):
-        UIAudio.play_music("hotel")
-        self.business_screen.update_ui()
-        self.animate_switch(2)
+        self.open_place_upgrades()
 
     def show_personal_life(self):
-        UIAudio.play_music("romance")
-        self.personal_life_screen.update_ui()
-        self.animate_switch(3)
+        self.current_place_idx = 0  # Home
+        self.show_gameplay()
 
     def show_tavern(self):
-        UIAudio.play_music("bar")
-        self.tavern_screen.update_ui()
-        self.animate_switch(4)
+        self.current_place_idx = 2  # Bar
+        self.show_gameplay()
 
     def show_game_over(self):
         UIAudio.play_music("home")
         self.hud_bar.setVisible(False)
+        self.sidebar_widget.setVisible(False)
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
@@ -252,14 +268,11 @@ class MainWindow(QMainWindow):
         self.personal_life_screen = PersonalLifeScreen(self.state, self)
         self.tavern_screen = TavernMenuScreen(self.state, self)
         
-        self.gameplay_screen.manage_business.connect(self.show_business)
-        self.gameplay_screen.personal_life.connect(self.show_personal_life)
-        self.gameplay_screen.restaurant_opened.connect(self.on_open_restaurant)
-        
         self.business_screen.go_back.connect(self.show_gameplay)
         self.business_screen.state_changed.connect(self.update_hud)
         self.personal_life_screen.go_back.connect(self.show_gameplay)
         self.personal_life_screen.state_changed.connect(self.update_hud)
+        self.personal_life_screen.sleep_clicked.connect(self.on_sleep_and_end_day)
         self.tavern_screen.go_back.connect(self.show_personal_life)
         self.tavern_screen.state_changed.connect(self.update_hud)
         
@@ -276,35 +289,235 @@ class MainWindow(QMainWindow):
         
         self.show_main_menu()
 
-    def on_open_restaurant(self, hours: int):
-        # 1. Run simulation
-        sim = self.state.simulate_business_day(hours)
-        if sim['actual_served'] > 0:
-            UIAudio.play_coin()
-            
-        # 2. Transition music to home (review ledger phase)
-        UIAudio.play_music("home")
+    def init_sidebar_widget(self):
+        self.sidebar_widget = QFrame(self)
+        self.sidebar_widget.setObjectName("sidebar-frame")
+        self.sidebar_widget.setStyleSheet(f"""
+            QFrame#sidebar-frame {{
+                background-color: {ThemeManager.CREAM};
+                border-left: 4px solid {ThemeManager.DARK_BROWN};
+                padding: 10px;
+            }}
+            QPushButton {{
+                font-family: VT323, monospace;
+                font-size: 16px;
+                background-color: {ThemeManager.CREAM};
+                border: 2px solid {ThemeManager.DARK_BROWN};
+                padding: 8px;
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: #E25E3E;
+                color: white;
+            }}
+        """)
         
-        # 3. Present Ledger Check Receipt popup dialog
-        dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
-        dlg.exec()
+        layout = QVBoxLayout(self.sidebar_widget)
+        layout.setContentsMargins(5, 10, 5, 10)
+        layout.setSpacing(12)
         
-        # 4. Enable evening phase and refresh gameplay hub controls
-        self.evening_phase = True
-        self.show_gameplay()
+        # 1. Start Day / Pause / Continue Controls
+        self.sim_btn = QPushButton("Start Day", self)
+        self.sim_btn.setObjectName("sim-btn")
+        self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
+        self.sim_btn.clicked.connect(self.on_sim_btn_clicked)
+        layout.addWidget(self.sim_btn)
+        
+        # 2. Upgrades Button
+        self.upgrades_btn = QPushButton("Place Upgrades", self)
+        self.upgrades_btn.clicked.connect(self.open_place_upgrades)
+        layout.addWidget(self.upgrades_btn)
+        
+        # 3. Money Mgmt Button
+        self.money_btn = QPushButton("Money Mgmt", self)
+        self.money_btn.clicked.connect(self.open_money_mgmt)
+        layout.addWidget(self.money_btn)
+        
+        # 4. Relationship Mgmt Button
+        self.rel_btn = QPushButton("Relationship Mgmt", self)
+        self.rel_btn.clicked.connect(self.open_relationship_mgmt)
+        layout.addWidget(self.rel_btn)
+        
+        # 5. Options Button
+        self.options_btn = QPushButton("Options", self)
+        self.options_btn.clicked.connect(self.open_options)
+        layout.addWidget(self.options_btn)
+        
+        layout.addStretch()
+        
+        # 6. Bottom Navigation Controls: < place name >
+        nav_layout = QHBoxLayout()
+        nav_layout.setSpacing(4)
+        
+        self.left_nav_btn = QPushButton("<", self)
+        self.left_nav_btn.setMaximumWidth(40)
+        self.left_nav_btn.clicked.connect(self.on_nav_left)
+        nav_layout.addWidget(self.left_nav_btn)
+        
+        self.place_label = QLabel("Restaurant", self)
+        self.place_label.setAlignment(Qt.AlignCenter)
+        self.place_label.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        nav_layout.addWidget(self.place_label)
+        
+        self.right_nav_btn = QPushButton(">", self)
+        self.right_nav_btn.setMaximumWidth(40)
+        self.right_nav_btn.clicked.connect(self.on_nav_right)
+        nav_layout.addWidget(self.right_nav_btn)
+        
+        layout.addLayout(nav_layout)
+        
+        self.sidebar_widget.setVisible(False)
+        return self.sidebar_widget
 
-    def on_visit_tavern(self):
-        p = self.state.player
-        if p.energy < 15:
-            ConfirmDialog("Too Exhausted", "You are too exhausted to visit the Tavern tonight! (15 Energy required)", self).exec()
+    def on_sim_btn_clicked(self):
+        UIAudio.play_click()
+        if self.evening_phase:
+            self.on_sleep_and_end_day()
             return
             
-        p.adjust_energy(-15)
-        self.state.finance.record_transaction("Misc", 0, "Visited Tavern")
-        self.show_tavern()
+        if not self.is_working:
+            dlg = ChoicesDialog(
+                "Open Restaurant",
+                "Choose the length of your work shift today:",
+                [
+                    "Short Shift (4 Hours) - Conserves Energy",
+                    "Standard Shift (8 Hours) - Normal Operation",
+                    "Overtime Shift (12 Hours) - Spouse help triggers possible"
+                ],
+                self
+            )
+            if dlg.exec() and dlg.chosen_index != -1:
+                self.target_work_hours = [4, 8, 12][dlg.chosen_index]
+                self.active_hours_passed = 0
+                self.is_working = True
+                self.is_paused = False
+                
+                self.state.finance.start_new_day()
+                
+                self.sim_btn.setText("Pause")
+                self.sim_btn.setStyleSheet("font-weight: bold; background-color: #F8C4B4;")
+                
+                self.day_clock_timer.start(10000)
+                self.notification_manager.add_notification(
+                    f"Diner open! Real-time shift started: {self.target_work_hours} hours.", "info"
+                )
+                self.update_hud()
+        else:
+            if self.is_paused:
+                self.is_paused = False
+                self.sim_btn.setText("Pause")
+                self.sim_btn.setStyleSheet("font-weight: bold; background-color: #F8C4B4;")
+                self.day_clock_timer.start(10000)
+                self.notification_manager.add_notification("Game continued.", "info")
+            else:
+                self.is_paused = True
+                self.sim_btn.setText("Continue")
+                self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
+                self.day_clock_timer.stop()
+                self.notification_manager.add_notification("Game paused.", "info")
+
+    def on_game_clock_tick(self):
+        if not self.is_working or self.is_paused:
+            return
+            
+        if self.state.player.energy <= 0.0:
+            self.day_clock_timer.stop()
+            self.is_working = False
+            UIAudio.play_sad()
+            ConfirmDialog("Exhausted!", "You ran out of energy and passed out!\nYour staff closed down the shop.", self).exec()
+            self.on_sleep_and_end_day()
+            return
+            
+        if self.active_hours_passed >= self.target_work_hours:
+            self.day_clock_timer.stop()
+            self.is_working = False
+            self.evening_phase = True
+            UIAudio.play_success()
+            
+            dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
+            dlg.exec()
+            
+            self.sim_btn.setText("Sleep & End Day")
+            self.sim_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
+            self.notification_manager.add_notification("Workday finished! You are now in the Evening Phase.", "info")
+            self.update_hud()
+            return
+            
+        self.active_hours_passed += 1
+        
+        level_mults = {0: 1.5, 1: 1.3, 2: 1.1, 3: 0.9, 4: 0.7}
+        level_mult = level_mults.get(self.state.restaurant.level, 1.0)
+        
+        active_employees = self.state.employees.get_active_employees()
+        staff_count = len(active_employees)
+        staff_mults = {0: 1.0, 1: 0.8, 2: 0.65, 3: 0.5}
+        staff_mult = staff_mults.get(staff_count, 0.5 if staff_count > 3 else 1.0)
+        
+        hourly_drain = self.state.player.work_energy_cost_per_hour * level_mult * staff_mult
+        self.state.player.adjust_energy(-hourly_drain)
+        
+        res = self.state.simulate_one_hour(self.active_hours_passed)
+        if res["served"] > 0:
+            UIAudio.play_coin()
+            self.notification_manager.add_notification(
+                f"Hour {self.active_hours_passed}: Served {res['served']} meals! Earned ${res['total_income']:.2f}", "success"
+            )
+            
+        self.update_hud()
+        
+    def open_place_upgrades(self):
+        PlaceUpgradesDialog(self.state, self).exec()
+        
+    def open_money_mgmt(self):
+        MoneyMgmtDialog(self.state, self).exec()
+        
+    def open_relationship_mgmt(self):
+        RelationshipMgmtDialog(self.state, self).exec()
+        
+    def open_options(self):
+        OptionsDialog(self).exec()
+
+    def update_place_screen(self):
+        place = self.places_cycle[self.current_place_idx]
+        self.place_label.setText(place)
+        
+        if place == "Home":
+            UIAudio.play_music("romance")
+            self.stacked_widget.setCurrentIndex(3)
+            self.personal_life_screen.update_ui()
+        elif place == "Restaurant":
+            UIAudio.play_music("hotel")
+            self.stacked_widget.setCurrentIndex(1)
+            self.gameplay_screen.update_ui(self.evening_phase)
+        elif place == "Bar":
+            UIAudio.play_music("bar")
+            self.stacked_widget.setCurrentIndex(4)
+            self.tavern_screen.update_ui()
+            
+    def on_nav_left(self):
+        UIAudio.play_click()
+        self.current_place_idx = (self.current_place_idx - 1) % len(self.places_cycle)
+        self.update_place_screen()
+        
+    def on_nav_right(self):
+        UIAudio.play_click()
+        self.current_place_idx = (self.current_place_idx + 1) % len(self.places_cycle)
+        self.update_place_screen()
 
     def on_sleep_and_end_day(self):
         UIAudio.play_click()
+        
+        # Stop simulation timer if sleeping early
+        if self.day_clock_timer.isActive():
+            self.day_clock_timer.stop()
+            
+        self.is_working = False
+        self.is_paused = False
+        self.active_hours_passed = 0
+        
+        # Reset button text
+        self.sim_btn.setText("Start Day")
+        self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
         
         # 1. Check and trigger random events BEFORE sleep
         triggered_event = self.state.events.check_and_trigger_event(self.state)
@@ -367,7 +580,7 @@ class MainWindow(QMainWindow):
         rom = self.state.romance
         
         self.shop_name_lbl.setText(f"🏰 {r.name} (Lvl {r.level})")
-        phase_str = "Evening" if self.evening_phase else "Prep"
+        phase_str = "Evening" if self.evening_phase else ("Working (Hour %d/%d)" % (self.active_hours_passed, self.target_work_hours) if self.is_working else "Morning Prep")
         self.day_lbl.setText(f"📅 Day {self.state.day} ({self.state.day_name}) • {phase_str}")
         self.cash_lbl.setText(f"💰 ${p.cash:.2f}")
         
@@ -386,8 +599,6 @@ class MainWindow(QMainWindow):
         # Re-verify and refresh current active screen content
         if self.stacked_widget.currentIndex() == 1:
             self.gameplay_screen.update_ui(self.evening_phase)
-        elif self.stacked_widget.currentIndex() == 2:
-            self.business_screen.update_ui()
         elif self.stacked_widget.currentIndex() == 3:
             self.personal_life_screen.update_ui()
         elif self.stacked_widget.currentIndex() == 4:

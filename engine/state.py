@@ -44,6 +44,7 @@ class GameState:
         self.loan = LoanSystem.from_config(self.config)
         self.town = Town()
         self.memory = {}
+        self.player_assets = []
         
         # Event System
         self.events = EventSystem()
@@ -238,6 +239,108 @@ class GameState:
             "energy_spent": player_energy_cost,
             "rep_change": rep_change,
             "avg_skill": avg_skill
+        }
+
+    def simulate_one_hour(self, current_hour: int) -> dict[str, Any]:
+        """Simulates 1 hour of the business day.
+        Deducts hourly energy cost and processes hourly customers and sales.
+        """
+        p = self.romance.partner
+        active_employees = self.employees.get_active_employees()
+        
+        # Spouse / Partner helper check (same weekend / overtime rule)
+        partner_helps_today = False
+        if p:
+            if p.is_co_owner:
+                # Wife helps during weekends or if working late hours (> 8 hours total)
+                if self.day_name in ["Friday", "Saturday", "Sunday"] or current_hour > 8:
+                    partner_helps_today = True
+            elif p.is_partner and (self.day_name in p.schedule):
+                partner_helps_today = True
+                
+        partner_boost = p.attraction_boost if partner_helps_today else 0.0
+        drain = self.competitor.get_attraction_drain()
+        attraction = self.restaurant.calculate_attraction(competitor_impact=drain) + partner_boost
+        
+        # Capacity limits
+        capacity = self.restaurant.customer_capacity
+        multiplier = self.town.economic_multiplier
+        random_factor = random.uniform(0.8, 1.2)
+        
+        # 1 hour calculation
+        hourly_rate = (capacity / 8.0) * attraction * multiplier
+        potential_customers = max(1, int(hourly_rate * random_factor))
+        
+        # Servicing capacity in 1 hour
+        player_capacity = 3
+        employee_capacity = sum(int(2 + e.skill * 4) for e in active_employees)
+        partner_capacity = 4 if partner_helps_today else 0
+        total_capacity = player_capacity + employee_capacity + partner_capacity
+        
+        max_hourly_capacity = max(1, capacity // 8)
+        actual_served = min(potential_customers, total_capacity, max_hourly_capacity)
+        turned_away = max(0, potential_customers - total_capacity)
+        
+        revenue = round(actual_served * self.restaurant.menu_price, 2)
+        
+        # Tips
+        workers_count = 1 + len(active_employees) + (1 if partner_helps_today else 0)
+        skills_sum = 0.5 + sum(e.skill for e in active_employees) + (0.8 if partner_helps_today else 0.0)
+        avg_skill = skills_sum / workers_count
+        
+        tip_rate = random.uniform(0.0, 1.5) * (self.restaurant.reputation / 100.0) * avg_skill
+        tips = round(actual_served * tip_rate, 2)
+        
+        total_income = round(revenue + tips, 2)
+        self.player.adjust_cash(total_income)
+        
+        # Record transactions in real-time
+        if revenue > 0:
+            self.finance.record_transaction("Revenue", revenue, f"Hour {current_hour}: Served {actual_served} meals")
+        if tips > 0:
+            self.finance.record_transaction("Revenue", tips, f"Hour {current_hour}: Tips received")
+            
+        # Rep adjustments
+        rep_change = 0.0
+        if actual_served > 0:
+            rep_change += 0.004 * actual_served * (avg_skill - 0.4)
+            
+            max_p = self.restaurant.price_per_meal_range[1]
+            if self.restaurant.menu_price > max_p:
+                overprice = self.restaurant.menu_price - max_p
+                rep_change -= 0.08 * overprice * actual_served
+        
+        if turned_away > 0:
+            rep_change -= 0.015 * turned_away
+            
+        if self.competitor.is_active and not self.competitor.counter_marketing_active:
+            rep_change -= 0.12
+            
+        if partner_helps_today and p and p.is_co_owner:
+            rep_change += 0.25
+            
+        self.restaurant.adjust_reputation(rep_change)
+        
+        # Auto loan repayment hourly from sales
+        loan_payment = 0.0
+        if self.loan.balance > 0.0 and total_income > 0.0:
+            rates = {0: 0.05, 1: 0.07, 2: 0.10, 3: 0.15, 4: 0.20}
+            pct = rates.get(self.restaurant.level, 0.05)
+            deduction = round(total_income * pct, 2)
+            if deduction > self.loan.balance:
+                deduction = self.loan.balance
+            success, msg, loan_payment = self.loan.pay_loan(deduction, self.player.cash)
+            if success and loan_payment > 0.0:
+                self.player.adjust_cash(-loan_payment)
+                self.finance.record_transaction("Loan Interest", loan_payment, f"Auto-repayment ({int(pct*100)}%)")
+        
+        return {
+            "served": actual_served,
+            "revenue": revenue,
+            "tips": tips,
+            "total_income": total_income,
+            "loan_payment": loan_payment,
+            "rep_change": rep_change
         }
 
     def advance_day(self) -> list[str]:
