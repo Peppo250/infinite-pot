@@ -62,6 +62,8 @@ class RomanceSystem:
     has_ring: bool = False
     wedding_tier: str = "None"  # "None", "Modest", "Elegant", "Royal"
     
+    caught_cheating: bool = False
+
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "RomanceSystem":
         # Generate our 3 unique girls
@@ -94,14 +96,20 @@ class RomanceSystem:
             description="A high-energy logistics manager looking to start her own business, ambitious and demanding."
         )
         
-        return cls(characters=[c1, c2, c3], active_partner_name=None, has_ring=False, wedding_tier="None")
+        return cls(characters=[c1, c2, c3], active_partner_name=None, has_ring=False, wedding_tier="None", caught_cheating=False)
 
     @property
     def partner(self) -> RomanticCharacter | None:
-        """Returns the active romantic partner if any."""
-        if not self.active_partner_name:
-            return None
-        return next((c_item for c_item in self.characters if c_item.name == self.active_partner_name), None)
+        """Returns the active spouse (co-owner), first partner, or active_partner_name fallback if any."""
+        spouse = next((c for c in self.characters if c.is_co_owner), None)
+        if spouse:
+            return spouse
+        partner = next((c for c in self.characters if c.is_partner), None)
+        if partner:
+            return partner
+        if self.active_partner_name:
+            return next((c for c in self.characters if c.name == self.active_partner_name), None)
+        return None
 
     @property
     def partner_name(self) -> str:
@@ -141,15 +149,24 @@ class RomanceSystem:
 
     def propose_relationship(self, name: str) -> tuple[bool, str]:
         """Player asks the character to be their partner."""
+        if self.caught_cheating:
+            return False, "You were caught cheating and are legally barred from proposing relationships under Oakhaven family court orders!"
+
         char = next((c_item for c_item in self.characters if c_item.name == name), None)
         if not char:
             return False, "Character not found."
 
-        if self.active_partner_name:
-            return False, f"You are already in a relationship with {self.active_partner_name}! You must break up first."
+        if char.is_partner or char.is_co_owner:
+            return False, f"You are already in a relationship with {char.name}!"
 
         if char.romance_level < 40.0:
             return False, f"{char.name} likes you, but feels it is too early to commit. (Need 40.0 Romance, currently {char.romance_level:.1f})"
+
+        # 50% chance of acceptance between 40.0 and 60.0
+        if 40.0 <= char.romance_level < 60.0:
+            if random.random() < 0.5:
+                char.romance_level = max(0.0, char.romance_level - 5.0)  # Rejection penalty
+                return False, f"{char.name} hesitates. 'I like you, but I don't feel ready to commit yet.' (Try building romance to 60.0 for a guaranteed yes!)"
 
         char.is_partner = True
         self.active_partner_name = char.name
@@ -165,13 +182,20 @@ class RomanceSystem:
         p.is_partner = False
         p.is_co_owner = False
         p.romance_level = max(0.0, p.romance_level - 30.0)  # Heavy romance hit
-        self.active_partner_name = None
+        
+        # Reset partner name to another partner if one exists
+        next_partner = next((c for c in self.characters if c.is_partner or c.is_co_owner), None)
+        self.active_partner_name = next_partner.name if next_partner else None
+        
         self.has_ring = False
         self.wedding_tier = "None"
-        return True, f"You broke up with {old_name}. You are now single."
+        return True, f"You broke up with {old_name}."
 
     def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:
         """Player asks partner to move in and co-own the business."""
+        if self.caught_cheating:
+            return False, "You were caught cheating and are legally barred from proposing marriage under Oakhaven family court orders!"
+
         p = self.partner
         if not p:
             return False, "You do not have a partner to propose to!"
@@ -188,8 +212,36 @@ class RomanceSystem:
         if not self.has_ring:
             return False, f"You need to purchase a Diamond Engagement Ring first!"
 
+        # 50% chance of acceptance between 75.0 and 90.0
+        if 75.0 <= p.romance_level < 90.0:
+            if random.random() < 0.5:
+                p.romance_level = max(0.0, p.romance_level - 10.0)  # Rejection penalty
+                return False, f"{p.name} looks at the diamond ring, but shakes her head gently. 'I'm not sure if we're ready for marriage yet, let's take it slow.' (Try building romance to 90.0 for a guaranteed yes!)"
+
         p.is_co_owner = True
+        p.is_partner = True
         return True, f"{p.name} gasps as you open the velvet box. 'Yes! A thousand times yes!' She moves into your house and joins the restaurant as your wife and Co-Owner!"
+
+    def apply_jealousy(self, active_girl_name: str, day_name: str) -> list[str]:
+        """Applies jealousy to other girls in the bar today. Returns notification messages."""
+        notices = []
+        present_girls = self.get_characters_available(day_name)
+        for g in present_girls:
+            if g.name == active_girl_name:
+                continue
+            if g.romance_level > 25.0:
+                # Jealousy factor increases as romance goes higher
+                mults = {"Artist": 1.0, "Scholar": 0.8, "Entrepreneur": 1.3}
+                loss = (3.0 + (g.romance_level - 25.0) * 0.12) * mults[g.archetype]
+                
+                old_val = g.romance_level
+                g.romance_level = max(0.0, g.romance_level - loss)
+                
+                notices.append(
+                    f"💔 {g.name} saw you interacting with {active_girl_name} and looked hurt! "
+                    f"Romance with {g.name} dropped by -{loss:.1f} ({old_val:.1f} -> {g.romance_level:.1f})"
+                )
+        return notices
 
     def decay_without_house(self) -> str:
         """Applies daily romance decay if dating without a house. Returns a message if decay occurred."""

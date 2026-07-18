@@ -116,16 +116,135 @@ class TavernMenuScreen(QWidget):
                 break
                 
             choice = dlg.chosen_index
-            if choice == 0:  # Talk
+            if choice == 0:  # Talk (Interactive Dialogue Tree)
                 if p.energy < 10:
                     ConfirmDialog("Too Exhausted", "You don't have enough energy (10 required) to hold a conversation.", self).exec()
                 else:
-                    p.adjust_energy(-10)
-                    dialogue, gain = girl.interact_talk()
-                    UIAudio.play_dialogue()
-                    ConfirmDialog(f"Talking to {girl.name}", f"{girl.name} says:\n\n\"{dialogue}\"\n\n(Romance increased by {gain:.1f})", self).exec()
-                    self.update_ui()
-                    self.state_changed.emit()
+                    # Dialogue Tree definition based on romance and archetype
+                    talk_trees = {
+                        "Artist": {
+                            "low": {
+                                "prompt": "I'm trying to capture the morning mist over the valley, but the colors feel too cold. What should I add?",
+                                "options": [
+                                    ("Add a touch of warm saffron yellow; even cold mist needs a heart of light.", 8.0, "She smiles widely, eyes lighting up. 'Exactly! Saffron yellow is the perfect counterpoint!'"),
+                                    ("Maybe just paint it later when the sun is fully up.", 3.0, "She shrugs. 'I suppose, but then the mystery of the mist is gone.'"),
+                                    ("Color theory doesn't matter, just paint whatever.", -5.0, "She frowns and turns away. 'Art is all about intent. If you don't care, why talk about it?'")
+                                ]
+                            },
+                            "med": {
+                                "prompt": "Sometimes I worry my art is just an escape from reality. Am I wasting my life on canvas?",
+                                "options": [
+                                    ("Art doesn't escape reality; it reveals the beauty that reality hides. Your canvas matters.", 8.0, "She looks touched, her eyes soft. 'Thank you. I needed to hear that today.'"),
+                                    ("We all need a hobby. If it makes you happy, it's fine.", 3.0, "She sighs quietly. 'It's more than a hobby to me, but I appreciate the sentiment.'"),
+                                    ("Well, you could be doing something more practical, like running a business.", -5.0, "She crosses her arms. 'Practicality is the death of passion. I thought you of all people would understand.'")
+                                ]
+                            },
+                            "high": {
+                                "prompt": "When I look at you, I see a spectrum of colors I've never been able to mix on my palette. Do you feel it too?",
+                                "options": [
+                                    ("I feel like our colors are mixing into a beautiful new masterpiece every day.", 10.0, "She blushes deeply and smiles, stepping closer. 'That's the most poetic thing anyone has ever said to me.'"),
+                                    ("That's nice, I'm glad I can be your muse.", 4.0, "She giggles. 'You certainly are. I'll make sure to paint you sometime.'"),
+                                    ("You should probably keep your painting and your personal life separate.", -6.0, "She recoils slightly, hurt in her eyes. 'Oh. I... I see. My apologies for overstepping.'")
+                                ]
+                            }
+                        },
+                        "Scholar": {
+                            "low": {
+                                "prompt": "I've been translating the original charter of Oakhaven. It mentions a secret basement under the town square. Fascinating, isn't it?",
+                                "options": [
+                                    ("Fascinating indeed! Do you think it was used for storing emergency grain or smuggling?", 8.0, "She looks thrilled. 'Yes! And the layout suggests it connects to the river trade route too!'"),
+                                    ("Oh, Oakhaven is quite old. I'm sure there are many old cellars.", 3.0, "She nods. 'Yes, but cellars of this size usually imply institutional usage.'"),
+                                    ("Sounds like a waste of time. Old papers don't make money.", -5.0, "She sighs. 'Not everything is about revenue. The value of knowledge is intrinsic.'")
+                                ]
+                            },
+                            "med": {
+                                "prompt": "The logs show that the local soil has specific mineral deposits that enhance wild herb growth. This explains your pot's efficiency, but the math is still off...",
+                                "options": [
+                                    ("Perhaps the pot's magic interacts with the soil minerals on a quantum scale. Let's study it together.", 8.0, "Her eyes shine. 'Quantum magic! That's a highly unconventional hypothesis, but it warrants a full study!'"),
+                                    ("It's just a magical pot. No need to analyze it to death.", 3.0, "She chuckles. 'Well, curiosity is hard to shut off once it gets going.'"),
+                                    ("Stop trying to dissect my business secrets. It's confidential.", -5.0, "She looks taken back. 'I was just interested in the science. I won't ask again.'")
+                                ]
+                            },
+                            "high": {
+                                "prompt": "I've spent my life studying the past, but lately, I find myself thinking more about the future. Specifically, a future... with you.",
+                                "options": [
+                                    ("Let's write our own chapter in history together. The future is ours to research.", 10.0, "She holds your hand, smiling warmly. 'A collaborative research project on life. I like the sound of that.'"),
+                                    ("The future is hard to predict, but I'm glad you're in it.", 4.0, "She smiles. 'Statistically, having you in my projections improves my outlook.'"),
+                                    ("I don't think we should jump to conclusions. Let's keep it research-focused.", -6.0, "She stiffens, pulling her hand back. 'I see. I made a logical error in assuming reciprocity.'")
+                                ]
+                            }
+                        },
+                        "Entrepreneur": {
+                            "low": {
+                                "prompt": "Chef Sebastian's supply chain is highly centralized. If we disrupt his spice contracts, we can corner the lunch market.",
+                                "options": [
+                                    ("Brilliant. We can offer a long-term contract to the local spice cooperative and lock him out.", 8.0, "She smirks, highly impressed. 'Exactly! Hit him where it hurts: his margins. I like how you think.'"),
+                                    ("Disrupting contracts sounds risky. Maybe just lower our prices.", 3.0, "She shakes her head. 'Price wars are a race to the bottom. We need structural advantage.'"),
+                                    ("We shouldn't play dirty. Let's just focus on cooking good food.", -5.0, "She rolls her eyes. 'Good food is only 30% of business. The rest is positioning. Don't be naive.'")
+                                ]
+                            },
+                            "med": {
+                                "prompt": "My manager wants me to relocate to the capital for a promotion. The return on investment is high, but... I don't want to leave Oakhaven.",
+                                "options": [
+                                    ("Stay here. We can merge our operations, build our own empire, and get a better ROI together.", 8.0, "She looks stunned, then a proud smile appears. 'Merge operations? That is... a highly competitive proposal. Deal.'"),
+                                    ("A promotion is good. You should do whatever makes more money.", 3.0, "She nods slowly. 'From a purely fiscal standpoint, yes. But some quality-of-life variables are hard to price.'"),
+                                    ("You should go. The capital has way better businesses than this small town.", -5.0, "She looks disappointed. 'I see. You view my presence here as low-value. Good to know.'")
+                                ]
+                            },
+                            "high": {
+                                "prompt": "I've run the numbers. A partnership between us has an estimated synergy rating of 98%. I'm ready to merge our assets.",
+                                "options": [
+                                    ("Merger approved. I'm fully invested in you, both in business and in life.", 10.0, "She laughs, her eyes warm. 'Strategic alignment achieved. I am very happy to accept this partnership.'"),
+                                    ("Let's start with a trial contract and see how the partnership scales.", 4.0, "She grins. 'A phased rollout. Sensible, though I'm confident in the long-term projection.'"),
+                                    ("I'm not looking for a corporate takeover of my personal life.", -6.0, "She looks hurt and icy. 'It was a metaphor for commitment. But if you see it as a hostile takeover, the deal is off.'")
+                                ]
+                            }
+                        }
+                    }
+
+                    # Determine romance tier
+                    tier = "low"
+                    if girl.romance_level >= 75.0:
+                        tier = "high"
+                    elif girl.romance_level >= 40.0:
+                        tier = "med"
+
+                    tree = talk_trees[girl.archetype][tier]
+                    opt_texts = [o[0] for o in tree["options"]]
+
+                    # Show conversation option selector dialog
+                    opt_dlg = ChoicesDialog(
+                        f"Dialogue with {girl.name}",
+                        f"{girl.name} asks:\n\n\"{tree['prompt']}\"\n\nChoose your response:",
+                        opt_texts,
+                        self
+                    )
+                    if opt_dlg.exec() and opt_dlg.chosen_index != -1:
+                        chosen_idx = opt_dlg.chosen_index
+                        selected_option = tree["options"][chosen_idx]
+                        romance_impact = selected_option[1]
+                        reaction = selected_option[2]
+
+                        # Adjust player statistics
+                        p.adjust_energy(-10)
+                        girl.romance_level = min(100.0, max(0.0, girl.romance_level + romance_impact))
+                        UIAudio.play_dialogue()
+
+                        # Present reaction details
+                        impact_str = f"Romance +{romance_impact:.1f}" if romance_impact >= 0 else f"Romance {romance_impact:.1f}"
+                        ConfirmDialog(
+                            f"Talking to {girl.name}",
+                            f"{girl.name}'s Reaction:\n\n\"{reaction}\"\n\n({impact_str})",
+                            self
+                        ).exec()
+
+                        # Apply jealousy factor
+                        jealousy_notices = self.state.romance.apply_jealousy(girl.name, self.state.day_name)
+                        for notice in jealousy_notices:
+                            ConfirmDialog("Jealousy Alert", notice, self).exec()
+
+                        self.update_ui()
+                        self.state_changed.emit()
             elif choice == 1:  # Buy Drink
                 if p.cash < 25.0:
                     ConfirmDialog("No Cash", "You need $25.00 to buy a drink.", self).exec()

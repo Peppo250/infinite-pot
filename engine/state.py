@@ -43,6 +43,7 @@ class GameState:
         self.finance = FinancialSystem()
         self.loan = LoanSystem.from_config(self.config)
         self.town = Town()
+        self.memory = {}
         
         # Event System
         self.events = EventSystem()
@@ -91,7 +92,9 @@ class GameState:
         partner_helps_today = False
         if p:
             if p.is_co_owner:
-                partner_helps_today = True
+                # Wife helps only during weekends (Friday, Saturday, Sunday) or if player works > 8 hours
+                if self.day_name in ["Friday", "Saturday", "Sunday"] or player_work_hours > 8:
+                    partner_helps_today = True
             elif p.is_partner and (self.day_name in p.schedule):
                 partner_helps_today = True
                 
@@ -191,6 +194,10 @@ class GameState:
         if self.competitor.is_active and not self.competitor.counter_marketing_active:
             rep_change -= 1.0
             
+        # Wife help reputation bonus
+        if partner_helps_today and p and p.is_co_owner:
+            rep_change += 2.0
+            
         self.restaurant.adjust_reputation(rep_change)
         self.player.days_worked += 1
         
@@ -264,6 +271,64 @@ class GameState:
         if econ_msg:
             notifications.append(econ_msg)
             
+        # Cheating detection check (technically cheat on a person, got caught logic)
+        partners_count = sum(1 for c in self.romance.characters if c.is_partner or c.is_co_owner)
+        if partners_count > 1 and not self.romance.caught_cheating:
+            # 15% chance to get caught every night
+            if random.random() < 0.15:
+                self.romance.caught_cheating = True
+                
+                # Check if married to see if alimony applies
+                was_married = any(c.is_co_owner for c in self.romance.characters)
+                
+                # Seize house/properties
+                self.house.purchased = False
+                self.player.has_house = False
+                self.house.upgrades.clear()
+                
+                # Wipes relationship progress and breaks up
+                for c in self.romance.characters:
+                    c.is_partner = False
+                    c.is_co_owner = False
+                    c.romance_level = max(0.0, c.romance_level - 50.0)
+                
+                self.romance.active_partner_name = None
+                self.romance.has_ring = False
+                self.romance.wedding_tier = "None"
+                
+                if was_married:
+                    self.player.adjust_cash(-2000.0)
+                    self.finance.record_transaction("Misc", 2000.0, "Alimony settlement fine")
+                    notifications.append(
+                        "🚨 CAUGHT CHEATING! Your spouse found out about your other partners! "
+                        "You have been sued for divorce. The court has seized your cottage, wiped all relationship progress, "
+                        "fined you $2,000.00 in alimony, and legally barred you from dating anyone else!"
+                    )
+                else:
+                    notifications.append(
+                        "💔 CAUGHT CHEATING! Your partners discovered you were seeing other people! "
+                        "They have all broken up with you and your relationship progress has been wiped."
+                    )
+
+        # Lead up warnings for Chef Sebastian (foreshadowing)
+        if not self.competitor.is_active:
+            has_partner_any = any(c.is_partner or c.is_co_owner for c in self.romance.characters)
+            # Level 3 & partner warning
+            if self.restaurant.level == 3 and has_partner_any:
+                if "foreshadow_1" not in self.memory:
+                    self.memory["foreshadow_1"] = True
+                    notifications.append("👂 Whisper in Oakhaven: Chef Sebastian from the capital is rumored to be looking at real estate in the town center...")
+            # Level 4 & partner warning
+            if self.restaurant.level >= 4 and has_partner_any and not self.house.purchased:
+                if "foreshadow_2" not in self.memory:
+                    self.memory["foreshadow_2"] = True
+                    notifications.append("📰 Oakhaven Gazette: Chef Sebastian has purchased a large commercial plot for Bistro Gourmet.")
+            # Level 4 & house warning
+            if self.restaurant.level >= 4 and self.house.purchased and not has_partner_any:
+                if "foreshadow_3" not in self.memory:
+                    self.memory["foreshadow_3"] = True
+                    notifications.append("👤 Talk in town: Chef Sebastian was seen walking around Oakhaven in a fine silk coat, scouting locations.")
+
         # Competitor check
         competitor_was_active = self.competitor.is_active
         has_partner = self.romance.partner is not None and (self.romance.partner.is_partner or self.romance.is_co_owner)

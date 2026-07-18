@@ -100,8 +100,8 @@ def test_romance_milestones() -> None:
     dialogue, gain = target.interact_talk()
     assert target.romance_level > 0.0
     
-    # Force romance to 45.0 to propose relationship
-    target.romance_level = 45.0
+    # Force romance to 65.0 to propose relationship
+    target.romance_level = 65.0
     success, msg = rom.propose_relationship(target.name)
     assert success is True
     assert rom.partner_name == target.name
@@ -119,7 +119,7 @@ def test_romance_milestones() -> None:
     assert rom.romance_level > 45.0
     
     # Co-own ask without house
-    rom.romance_level = 80.0
+    rom.romance_level = 95.0
     success, msg = rom.ask_to_co_own(has_house=False)
     assert success is False
     
@@ -297,7 +297,7 @@ def test_high_end_upgrades_and_wedding() -> None:
     rom = state.romance
     target = rom.characters[0]
     rom.active_partner_name = target.name
-    target.romance_level = 80.0
+    target.romance_level = 95.0
     
     # Marriage proposal fails without a ring
     rom.has_ring = False
@@ -323,3 +323,54 @@ def test_ui_theme_manager() -> None:
     assert ThemeManager.CREAM in stylesheet
     assert ThemeManager.DARK_BROWN in stylesheet
     assert ThemeManager.GOLD_MONEY in stylesheet
+
+def test_gameplay_rules_overhaul() -> None:
+    # Setup test game state
+    state = GameState()
+    rom = state.romance
+    p = state.player
+    
+    # 1. Test proposal probability thresholds
+    girl_a = rom.characters[0]
+    girl_a.romance_level = 65.0 # >= 60.0 guarantees 100% success
+    success, msg = rom.propose_relationship(girl_a.name)
+    assert success is True
+    assert girl_a.is_partner is True
+    
+    # 2. Test jealousy factor
+    girl_b = rom.characters[1]
+    girl_b.schedule = [state.day_name]
+    girl_a.schedule = [state.day_name]
+    girl_b.romance_level = 40.0
+    
+    notices = rom.apply_jealousy(girl_a.name, state.day_name)
+    assert len(notices) > 0
+    assert girl_b.romance_level < 40.0
+    
+    # 3. Test multiple dating and cheating seizure
+    girl_b.romance_level = 65.0
+    success_b, msg_b = rom.propose_relationship(girl_b.name)
+    assert success_b is True # Cheat by dating multiple partners
+    
+    state.house.purchased = True
+    p.has_house = True
+    girl_a.is_co_owner = True
+    
+    import random
+    original_random = random.random
+    random.random = lambda: 0.01 # Force caught chance (0.01 < 0.15)
+    
+    p.cash = 3000.0
+    state.advance_day()
+    random.random = original_random
+    
+    # Assert house is seized and alimony fined
+    assert state.house.purchased is False
+    assert p.has_house is False
+    assert p.cash <= 1000.0
+    assert rom.caught_cheating is True
+    
+    # Proposing should be legally blocked
+    success_block, msg_block = rom.propose_relationship(girl_a.name)
+    assert success_block is False
+    assert "legally barred" in msg_block

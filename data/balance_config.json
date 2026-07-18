@@ -27,8 +27,8 @@
     },
     "2": {
       "name": "Own Roadside Cart",
-      "upgrade_cost": 300.0,
-      "daily_maintenance": 25.0,
+      "upgrade_cost": 200.0,
+      "daily_maintenance": 12.0,
       "customer_capacity": 32,
       "max_employees": 0,
       "price_per_meal_range": [5.0, 9.0],
@@ -36,8 +36,8 @@
     },
     "3": {
       "name": "Edge-of-Town Shop",
-      "upgrade_cost": 900.0,
-      "daily_maintenance": 80.0,
+      "upgrade_cost": 600.0,
+      "daily_maintenance": 40.0,
       "customer_capacity": 50,
       "max_employees": 1,
       "price_per_meal_range": [8.0, 14.0],
@@ -45,8 +45,8 @@
     },
     "4": {
       "name": "Town Restaurant",
-      "upgrade_cost": 2500.0,
-      "daily_maintenance": 220.0,
+      "upgrade_cost": 1500.0,
+      "daily_maintenance": 110.0,
       "customer_capacity": 90,
       "max_employees": 3,
       "price_per_meal_range": [12.0, 26.0],
@@ -90,24 +90,6 @@
         "daily_maintenance": 5.0,
         "min_level": 4,
         "description": "Showcase your magical pot on a majestic gilded stand, sparking curiosity."
-      },
-      {
-        "id": "sebastian_recipes",
-        "name": "Sebastian's Secret Recipes",
-        "cost": 3000.0,
-        "attraction_bonus": 0.15,
-        "daily_maintenance": 15.0,
-        "min_level": 4,
-        "description": "Exquisite cooking secrets that boost attraction by 15% and increase maximum meal price limits by +$5.00."
-      },
-      {
-        "id": "super_cooker",
-        "name": "Industrial Magic Super-Cooker",
-        "cost": 5000.0,
-        "attraction_bonus": 0.0,
-        "daily_maintenance": 40.0,
-        "min_level": 4,
-        "description": "A customized magic pot regulator setup that permanently increases customer capacity by +30 seats."
       }
     ],
     "house": [
@@ -170,13 +152,13 @@
     ]
   },
   "house_purchase": {
-    "cost": 4000.0,
-    "daily_maintenance": 45.0,
+    "cost": 2500.0,
+    "daily_maintenance": 15.0,
     "description": "A charming cottage on the edge of town, symbol of a stable personal life."
   },
   "loans": {
     "max_loan_ratio": 0.5,
-    "annual_interest_rate": 0.15,
+    "annual_interest_rate": 0.10,
     "minimum_payment_percentage": 0.05
   },
   "employee_pool": [
