@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QScrollArea
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainter
 from ui.theme import ThemeManager
 
 class GameplayScreen(QWidget):
@@ -9,8 +9,10 @@ class GameplayScreen(QWidget):
         self.state = state
         
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(15, 10, 15, 10)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(20)
+        
+        card_style = "QFrame { background-color: rgba(245, 235, 224, 0.92); border: 3px solid #5B3923; border-radius: 8px; }"
         
         # LEFT COLUMN: Status & Operations
         left_layout = QVBoxLayout()
@@ -37,17 +39,17 @@ class GameplayScreen(QWidget):
         
         # Status Card
         self.status_card = QFrame(self)
-        self.status_card.setObjectName("card-frame")
+        self.status_card.setStyleSheet(card_style)
         status_layout = QVBoxLayout(self.status_card)
         status_layout.setSpacing(10)
         
         status_title = QLabel("🏰 Diner Status & Operations", self)
-        status_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        status_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         status_layout.addWidget(status_title)
         
         self.status_lbl = QLabel(self)
         self.status_lbl.setWordWrap(True)
-        self.status_lbl.setStyleSheet("font-size: 14px; line-height: 1.4;")
+        self.status_lbl.setStyleSheet("font-size: 14px; line-height: 1.4; border: none; background: transparent;")
         status_layout.addWidget(self.status_lbl)
         
         left_layout.addWidget(self.status_card, stretch=1)
@@ -57,31 +59,30 @@ class GameplayScreen(QWidget):
         right_column = QVBoxLayout()
         right_column.setSpacing(15)
         
-        self.env_img = QLabel(self)
-        self.env_img.setStyleSheet(f"border: 4px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
-        pixmap = QPixmap("assets/images/restaurant_bg.jpg")
-        self.env_img.setPixmap(pixmap.scaled(320, 180, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
-        right_column.addWidget(self.env_img, alignment=Qt.AlignCenter)
-        
         self.obj_card = QFrame(self)
-        self.obj_card.setObjectName("card-frame")
+        self.obj_card.setStyleSheet(card_style)
         obj_layout = QVBoxLayout(self.obj_card)
         obj_layout.setSpacing(10)
         
         obj_title = QLabel("🎯 Current Objectives", self)
-        obj_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        obj_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         obj_layout.addWidget(obj_title)
         
         self.obj_content = QLabel(self)
         self.obj_content.setWordWrap(True)
         self.obj_content.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        self.obj_content.setStyleSheet("line-height: 1.4;")
+        self.obj_content.setStyleSheet("line-height: 1.4; border: none; background: transparent;")
         obj_layout.addWidget(self.obj_content)
         
         right_column.addWidget(self.obj_card, stretch=1)
         main_layout.addLayout(right_column, stretch=2)
         
         self.update_ui()
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        pixmap = QPixmap("assets/images/restaurant_bg.jpg")
+        painter.drawPixmap(self.rect(), pixmap)
         
     def update_ui(self, evening_mode=False):
         r = self.state.restaurant

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea, QListWidget, QListWidgetItem, QProgressBar
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainter
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.dialogs.custom_dialogs import ConfirmDialog, ChoicesDialog
@@ -13,44 +13,25 @@ class TavernMenuScreen(QWidget):
         super().__init__(parent)
         self.state = state
         
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(15, 10, 15, 10)
-        main_layout.setSpacing(10)
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(20)
         
-        # Header
-        header_layout = QHBoxLayout()
-        self.back_btn = QPushButton("← Return to Evening Choices", self)
-        self.back_btn.clicked.connect(self.go_back.emit)
-        header_layout.addWidget(self.back_btn)
-        
-        self.title = QLabel("Oakhaven Tavern", self)
-        self.title.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
-        header_layout.addWidget(self.title, alignment=Qt.AlignRight)
-        main_layout.addLayout(header_layout)
-        
-        # Tavern Pixel Art Banner (Scaled down for vertical space)
-        self.banner_img = QLabel(self)
-        self.banner_img.setStyleSheet(f"border: 4px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
-        pixmap = QPixmap("assets/images/tavern_bg.jpg")
-        self.banner_img.setPixmap(pixmap.scaled(960, 95, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation))
-        main_layout.addWidget(self.banner_img, alignment=Qt.AlignCenter)
-        
-        # Split layout
-        split_layout = QHBoxLayout()
-        split_layout.setSpacing(20)
+        card_style = "QFrame { background-color: rgba(245, 235, 224, 0.92); border: 3px solid #5B3923; border-radius: 8px; }"
         
         # LEFT COLUMN: Socializing & Girls
         self.girls_card = QFrame(self)
-        self.girls_card.setObjectName("card-frame")
+        self.girls_card.setStyleSheet(card_style)
         self.girls_layout = QVBoxLayout(self.girls_card)
         self.girls_layout.setSpacing(12)
         
         girls_title = QLabel("🌹 Socializing & Dating", self)
-        girls_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        girls_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         self.girls_layout.addWidget(girls_title)
         
         self.girls_scroll = QScrollArea(self)
         self.girls_scroll.setWidgetResizable(True)
+        self.girls_scroll.setStyleSheet("QScrollArea { border: none; background: transparent; } QWidget { background: transparent; }")
         self.girls_content = QWidget()
         self.girls_scroll_layout = QVBoxLayout(self.girls_content)
         self.girls_scroll_layout.setSpacing(10)
@@ -58,20 +39,21 @@ class TavernMenuScreen(QWidget):
         self.girls_scroll.setWidget(self.girls_content)
         self.girls_layout.addWidget(self.girls_scroll)
         
-        split_layout.addWidget(self.girls_card, stretch=1)
+        main_layout.addWidget(self.girls_card, stretch=1)
         
         # RIGHT COLUMN: Job Candidates
         self.candidates_card = QFrame(self)
-        self.candidates_card.setObjectName("card-frame")
+        self.candidates_card.setStyleSheet(card_style)
         self.cand_layout = QVBoxLayout(self.candidates_card)
         self.cand_layout.setSpacing(12)
         
         cand_title = QLabel("👥 Job Applicants", self)
-        cand_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        cand_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         self.cand_layout.addWidget(cand_title)
         
         self.cand_scroll = QScrollArea(self)
         self.cand_scroll.setWidgetResizable(True)
+        self.cand_scroll.setStyleSheet("QScrollArea { border: none; background: transparent; } QWidget { background: transparent; }")
         self.cand_content = QWidget()
         self.cand_scroll_layout = QVBoxLayout(self.cand_content)
         self.cand_scroll_layout.setSpacing(10)
@@ -79,10 +61,14 @@ class TavernMenuScreen(QWidget):
         self.cand_scroll.setWidget(self.cand_content)
         self.cand_layout.addWidget(self.cand_scroll)
         
-        split_layout.addWidget(self.candidates_card, stretch=1)
+        main_layout.addWidget(self.candidates_card, stretch=1)
         
-        main_layout.addLayout(split_layout)
         self.update_ui()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        pixmap = QPixmap("assets/images/tavern_bg.jpg")
+        painter.drawPixmap(self.rect(), pixmap)
 
     def interact_girl(self, girl):
         UIAudio.play_click()

@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QProgressBar, QFrame, QScrollArea
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainter
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.dialogs.custom_dialogs import ConfirmDialog
@@ -14,38 +14,25 @@ class PersonalLifeScreen(QWidget):
         super().__init__(parent)
         self.state = state
         
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(15, 10, 15, 10)
-        main_layout.setSpacing(10)
+        main_layout = QHBoxLayout(self)
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(20)
         
-        # Header with Back button
-        header_layout = QHBoxLayout()
-        self.back_btn = QPushButton("← Back to Hub", self)
-        self.back_btn.clicked.connect(self.go_back.emit)
-        header_layout.addWidget(self.back_btn)
-        
-        self.title = QLabel("Personal Life", self)
-        self.title.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
-        header_layout.addWidget(self.title, alignment=Qt.AlignRight)
-        main_layout.addLayout(header_layout)
-        
-        # Split layout for Romance and House
-        split_layout = QHBoxLayout()
-        split_layout.setSpacing(12)
+        card_style = "QFrame { background-color: rgba(245, 235, 224, 0.92); border: 3px solid #5B3923; border-radius: 8px; }"
         
         # LEFT COLUMN: Romance & Relationships
         self.romance_card = QFrame(self)
-        self.romance_card.setObjectName("card-frame")
+        self.romance_card.setStyleSheet(card_style)
         self.rom_layout = QVBoxLayout(self.romance_card)
         self.rom_layout.setSpacing(8)
         
         rom_title = QLabel("🌹 Dating & Romance", self)
-        rom_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        rom_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         self.rom_layout.addWidget(rom_title)
         
         self.rom_lbl = QLabel("You are currently single.", self)
         self.rom_lbl.setWordWrap(True)
-        self.rom_lbl.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.rom_lbl.setStyleSheet("font-size: 14px; font-weight: bold; border: none; background: transparent;")
         self.rom_layout.addWidget(self.rom_lbl)
         
         # Romance meter / Progress Bar
@@ -73,27 +60,21 @@ class PersonalLifeScreen(QWidget):
         self.rom_layout.addWidget(self.break_btn)
         
         self.rom_layout.addStretch()
-        split_layout.addWidget(self.romance_card, stretch=1)
+        main_layout.addWidget(self.romance_card, stretch=1)
         
         # RIGHT COLUMN: Home & Real Estate
         self.house_card = QFrame(self)
-        self.house_card.setObjectName("card-frame")
+        self.house_card.setStyleSheet(card_style)
         self.house_layout = QVBoxLayout(self.house_card)
         self.house_layout.setSpacing(12)
         
         house_title = QLabel("🏡 Home & Real Estate", self)
-        house_title.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        house_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #5B3923; border: none; background: transparent;")
         self.house_layout.addWidget(house_title)
-        
-        self.house_img = QLabel(self)
-        self.house_img.setStyleSheet(f"border: 3px solid {ThemeManager.DARK_BROWN}; border-radius: 0px;")
-        pixmap = QPixmap("assets/images/cottage_bg.jpg")
-        self.house_img.setPixmap(pixmap.scaled(320, 150, Qt.IgnoreAspectRatio, Qt.SmoothTransformation))
-        self.house_layout.addWidget(self.house_img)
         
         self.house_lbl = QLabel("You sleep on the floor of your shop.", self)
         self.house_lbl.setWordWrap(True)
-        self.house_lbl.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.house_lbl.setStyleSheet("font-size: 14px; font-weight: bold; border: none; background: transparent;")
         self.house_layout.addWidget(self.house_lbl)
         
         self.buy_house_btn = QPushButton("Purchase Cottage (-$2500.00)", self)
@@ -120,11 +101,13 @@ class PersonalLifeScreen(QWidget):
         self.house_layout.addWidget(self.scroll)
         
         self.house_layout.addStretch()
-        split_layout.addWidget(self.house_card, stretch=1)
-        
-        main_layout.addLayout(split_layout)
-        
+        main_layout.addWidget(self.house_card, stretch=1)
         self.update_ui()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        pixmap = QPixmap("assets/images/cottage_bg.jpg")
+        painter.drawPixmap(self.rect(), pixmap)
 
     def on_go_date(self):
         p = self.state.player
