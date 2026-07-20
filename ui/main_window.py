@@ -450,8 +450,8 @@ class MainWindow(QMainWindow):
             self.day_clock_timer.stop()
             self.is_working = False
             self.stop_btn.setVisible(False)
-            UIAudio.play_sad()
-            ConfirmDialog("Exhausted!", "You ran out of energy and passed out!\nYour staff closed down the shop.", self).exec()
+            UIAudio.play_notify()
+            self.notification_manager.add_notification("Exhausted! You passed out and your staff closed the shop.", "warning")
             self.on_sleep_and_end_day()
             return
             

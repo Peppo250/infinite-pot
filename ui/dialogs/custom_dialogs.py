@@ -308,7 +308,7 @@ class PlaceUpgradesDialog(GameDialog):
     def on_save_name(self):
         new_name = self.name_edit.text().strip()
         if new_name:
-            self.state.restaurant.name = new_name
+            self.state.restaurant.custom_name = new_name
             UIAudio.play_success()
             ConfirmDialog("Success", f"Restaurant renamed to '{new_name}'!", self).exec()
             p_win = self.parent()
