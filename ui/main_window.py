@@ -678,7 +678,7 @@ class MainWindow(QMainWindow):
                 item.widget().deleteLater()
                 
         rom = self.state.romance
-        for girl in rom.candidates:
+        for girl in rom.characters:
             f = QFrame(self.bar_girls_content)
             f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
@@ -702,7 +702,8 @@ class MainWindow(QMainWindow):
                 
         emp = self.state.employees
         p = self.state.player
-        for cand in emp.available_candidates:
+        cand_list = getattr(emp, 'available_candidates', emp.candidates)
+        for cand in cand_list:
             f = QFrame(self.bar_cand_content)
             f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
@@ -781,29 +782,33 @@ class MainWindow(QMainWindow):
         if rom.has_ring and rom.partner == girl and not rom.is_co_owner:
             opts.append("Propose Marriage & Co-Ownership")
             
-        dlg = ChoicesDialog(f"Socialize with {girl.name}", f"{girl.name} is relaxing at the bar.\nWhat would you like to do?", opts, self)
+        dlg = ChoicesDialog(f"Socialize with {girl.name}", f"{girl.name} ({girl.archetype}) is relaxing at the bar.\n{girl.description}\n\nWhat would you like to do?", opts, self)
         if dlg.exec() and dlg.chosen_index != -1:
             idx = dlg.chosen_index
             if idx == 0:
-                success, msg, cash_s, energy_s = rom.talk_to_candidate(girl.name, p.cash, p.energy)
-                if success:
-                    p.adjust_energy(-energy_s)
-                    UIAudio.play_dialogue()
-                    ConfirmDialog(f"Talk with {girl.name}", msg, self).exec()
-                else:
-                    ConfirmDialog("Cannot Talk", msg, self).exec()
+                if p.energy < 10:
+                    ConfirmDialog("Cannot Talk", "You need at least 10 energy to talk!", self).exec()
+                    return
+                p.adjust_energy(-10)
+                msg, gain = girl.interact_talk()
+                girl.romance_level = min(100.0, girl.romance_level + gain)
+                rom.apply_jealousy(girl.name, self.state.day_name)
+                UIAudio.play_dialogue()
+                ConfirmDialog(f"Talk with {girl.name}", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
             elif idx == 1:
-                success, msg, cash_s, energy_s = rom.buy_drink(girl.name, p.cash, p.energy)
-                if success:
-                    p.adjust_cash(-cash_s)
-                    p.adjust_energy(-energy_s)
-                    self.state.finance.record_transaction("Misc", cash_s, f"Bought drink for {girl.name}")
-                    UIAudio.play_coin()
-                    ConfirmDialog("Bought Drink", msg, self).exec()
-                else:
-                    ConfirmDialog("Cannot Buy Drink", msg, self).exec()
+                if p.cash < 25.0 or p.energy < 10:
+                    ConfirmDialog("Cannot Buy Drink", "You need $25.00 and 10 energy to buy a drink!", self).exec()
+                    return
+                p.adjust_cash(-25.0)
+                p.adjust_energy(-10)
+                self.state.finance.record_transaction("Misc", 25.0, f"Bought drink for {girl.name}")
+                msg, gain = girl.interact_drink(25.0)
+                girl.romance_level = min(100.0, girl.romance_level + gain)
+                rom.apply_jealousy(girl.name, self.state.day_name)
+                UIAudio.play_coin()
+                ConfirmDialog("Bought Drink", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
             elif idx == 2 and "Ask out" in opts[idx]:
-                success, msg, cash_s, energy_s = rom.start_relationship(girl.name)
+                success, msg = rom.propose_relationship(girl.name)
                 if success:
                     UIAudio.play_success()
                     ConfirmDialog("Relationship Started", msg, self).exec()
@@ -824,9 +829,12 @@ class MainWindow(QMainWindow):
             
         confirm = ConfirmDialog("Hire Employee", f"Hire {cand.name} (Skill: {cand.skill:.1f}) for ${cand.daily_salary:.2f}/day?", self)
         if confirm.exec():
-            emp.hire_candidate(cand.name)
-            UIAudio.play_success()
-            self.notification_manager.add_notification(f"Hired {cand.name}!", "success")
+            success = emp.hire_employee(cand.name)
+            if success:
+                UIAudio.play_success()
+                self.notification_manager.add_notification(f"Hired {cand.name}!", "success")
+            else:
+                ConfirmDialog("Hire Failed", f"Could not hire {cand.name}. Max staff capacity reached or candidate unavailable.", self).exec()
             self.update_hud()
 
     def on_go_date(self):
@@ -848,21 +856,24 @@ class MainWindow(QMainWindow):
     def on_buy_ring(self):
         p = self.state.player
         rom = self.state.romance
-        success, msg, cost = rom.buy_engagement_ring(p.cash)
-        if success:
-            p.adjust_cash(-cost)
-            self.state.finance.record_transaction("Ring", cost, "Purchased Diamond Engagement Ring")
-            UIAudio.play_coin()
-            ConfirmDialog("Diamond Ring", msg, self).exec()
-            self.update_hud()
-        else:
-            ConfirmDialog("Cannot Buy Ring", msg, self).exec()
+        if rom.has_ring:
+            ConfirmDialog("Already Purchased", "You already own a Diamond Engagement Ring!", self).exec()
+            return
+        if p.cash < 2500.0:
+            ConfirmDialog("Insufficient Funds", "The Diamond Engagement Ring costs $2500.00!", self).exec()
+            return
+        p.adjust_cash(-2500.0)
+        rom.has_ring = True
+        self.state.finance.record_transaction("Ring", 2500.0, "Purchased Diamond Engagement Ring")
+        UIAudio.play_coin()
+        ConfirmDialog("Diamond Ring", "Purchased a stunning Diamond Engagement Ring for $2500.00!", self).exec()
+        self.update_hud()
 
     def on_propose(self):
         p = self.state.player
         rom = self.state.romance
         h = self.state.house
-        success, msg = rom.propose_co_ownership(h.purchased)
+        success, msg = rom.ask_to_co_own(h.purchased)
         if success:
             UIAudio.play_success()
             ConfirmDialog("Proposal Accepted!", msg, self).exec()
