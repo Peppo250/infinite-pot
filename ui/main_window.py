@@ -1,6 +1,6 @@
 # ui/main_window.py
 import sys
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect, QPushButton
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect, QPushButton, QScrollArea
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
@@ -312,52 +312,185 @@ class MainWindow(QMainWindow):
             }}
         """)
         
-        layout = QVBoxLayout(self.sidebar_widget)
-        layout.setContentsMargins(5, 10, 5, 10)
-        layout.setSpacing(12)
+    def init_sidebar_widget(self):
+        self.sidebar_widget = QFrame(self)
+        self.sidebar_widget.setObjectName("sidebar-frame")
+        self.sidebar_widget.setStyleSheet(f"""
+            QFrame#sidebar-frame {{
+                background-color: {ThemeManager.CREAM};
+                border-left: 4px solid {ThemeManager.DARK_BROWN};
+                padding: 6px;
+            }}
+            QPushButton {{
+                font-family: VT323, monospace;
+                font-size: 15px;
+                background-color: {ThemeManager.CREAM};
+                border: 2px solid {ThemeManager.DARK_BROWN};
+                padding: 6px;
+                border-radius: 6px;
+            }}
+            QPushButton:hover {{
+                background-color: #E25E3E;
+                color: white;
+            }}
+        """)
         
-        # 1. Start Day / Pause / Continue Controls
+        layout = QVBoxLayout(self.sidebar_widget)
+        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(8)
+        
+        # Stacked widget for contextual sidebar pages
+        self.sidebar_stacked = QStackedWidget(self)
+        
+        # ==========================================
+        # PAGE 0: Restaurant Sidebar
+        # ==========================================
+        rest_page = QWidget(self)
+        rest_lay = QVBoxLayout(rest_page)
+        rest_lay.setContentsMargins(0, 0, 0, 0)
+        rest_lay.setSpacing(8)
+        
         self.sim_btn = QPushButton("Start Day", self)
         self.sim_btn.setObjectName("sim-btn")
         self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
         self.sim_btn.clicked.connect(self.on_sim_btn_clicked)
-        layout.addWidget(self.sim_btn)
+        rest_lay.addWidget(self.sim_btn)
         
         self.sidebar_status_lbl = QLabel(self)
         self.sidebar_status_lbl.setWordWrap(True)
         self.sidebar_status_lbl.setStyleSheet(f"font-size: 13px; line-height: 1.35; border: 2px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
-        layout.addWidget(self.sidebar_status_lbl)
+        rest_lay.addWidget(self.sidebar_status_lbl)
         
         self.stop_btn = QPushButton("Stop Work", self)
         self.stop_btn.setObjectName("stop-btn")
         self.stop_btn.setStyleSheet("font-weight: bold; background-color: #F8C4B4;")
         self.stop_btn.clicked.connect(self.on_stop_work_clicked)
         self.stop_btn.setVisible(False)
-        layout.addWidget(self.stop_btn)
+        rest_lay.addWidget(self.stop_btn)
         
-        # 2. Upgrades Button
         self.upgrades_btn = QPushButton("Place Upgrades", self)
         self.upgrades_btn.clicked.connect(self.open_place_upgrades)
-        layout.addWidget(self.upgrades_btn)
+        rest_lay.addWidget(self.upgrades_btn)
         
-        # 3. Money Mgmt Button
         self.money_btn = QPushButton("Money Mgmt", self)
         self.money_btn.clicked.connect(self.open_money_mgmt)
-        layout.addWidget(self.money_btn)
+        rest_lay.addWidget(self.money_btn)
         
-        # 4. Relationship Mgmt Button
         self.rel_btn = QPushButton("Relationship Mgmt", self)
         self.rel_btn.clicked.connect(self.open_relationship_mgmt)
-        layout.addWidget(self.rel_btn)
+        rest_lay.addWidget(self.rel_btn)
         
-        # 5. Options Button
+        rest_lay.addStretch()
+        self.sidebar_stacked.addWidget(rest_page) # Index 0
+        
+        # ==========================================
+        # PAGE 1: Bar (Tavern) Sidebar
+        # ==========================================
+        bar_page = QWidget(self)
+        bar_lay = QVBoxLayout(bar_page)
+        bar_lay.setContentsMargins(0, 0, 0, 0)
+        bar_lay.setSpacing(6)
+        
+        soc_hdr = QLabel("<b>🌹 Socialize</b>", self)
+        soc_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        bar_lay.addWidget(soc_hdr)
+        
+        self.bar_girls_scroll = QScrollArea(self)
+        self.bar_girls_scroll.setWidgetResizable(True)
+        self.bar_girls_scroll.setMaximumHeight(180)
+        self.bar_girls_content = QWidget()
+        self.bar_girls_layout = QVBoxLayout(self.bar_girls_content)
+        self.bar_girls_layout.setContentsMargins(0, 0, 0, 0)
+        self.bar_girls_layout.setSpacing(4)
+        self.bar_girls_scroll.setWidget(self.bar_girls_content)
+        bar_lay.addWidget(self.bar_girls_scroll)
+        
+        app_hdr = QLabel("<b>👥 Job Applicants</b>", self)
+        app_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        bar_lay.addWidget(app_hdr)
+        
+        self.bar_cand_scroll = QScrollArea(self)
+        self.bar_cand_scroll.setWidgetResizable(True)
+        self.bar_cand_scroll.setMaximumHeight(180)
+        self.bar_cand_content = QWidget()
+        self.bar_cand_layout = QVBoxLayout(self.bar_cand_content)
+        self.bar_cand_layout.setContentsMargins(0, 0, 0, 0)
+        self.bar_cand_layout.setSpacing(4)
+        self.bar_cand_scroll.setWidget(self.bar_cand_content)
+        bar_lay.addWidget(self.bar_cand_scroll)
+        
+        bar_lay.addStretch()
+        self.sidebar_stacked.addWidget(bar_page) # Index 1
+        
+        # ==========================================
+        # PAGE 2: Home (Cottage) Sidebar
+        # ==========================================
+        home_page = QWidget(self)
+        home_lay = QVBoxLayout(home_page)
+        home_lay.setContentsMargins(0, 0, 0, 0)
+        home_lay.setSpacing(6)
+        
+        rom_hdr = QLabel("<b>🌹 Dating & Romance</b>", self)
+        rom_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        home_lay.addWidget(rom_hdr)
+        
+        self.home_rom_lbl = QLabel(self)
+        self.home_rom_lbl.setWordWrap(True)
+        self.home_rom_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
+        home_lay.addWidget(self.home_rom_lbl)
+        
+        self.home_rom_progress = QProgressBar(self)
+        self.home_rom_progress.setRange(0, 100)
+        self.home_rom_progress.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
+        home_lay.addWidget(self.home_rom_progress)
+        
+        self.home_date_btn = QPushButton("💖 Go on a Date (-$100 | 25 E)", self)
+        self.home_date_btn.clicked.connect(self.on_go_date)
+        home_lay.addWidget(self.home_date_btn)
+        
+        self.home_ring_btn = QPushButton("💍 Buy Ring (-$2500)", self)
+        self.home_ring_btn.clicked.connect(self.on_buy_ring)
+        home_lay.addWidget(self.home_ring_btn)
+        
+        self.home_propose_btn = QPushButton("Propose Marriage", self)
+        self.home_propose_btn.clicked.connect(self.on_propose)
+        home_lay.addWidget(self.home_propose_btn)
+        
+        self.home_break_btn = QPushButton("Break Up", self)
+        self.home_break_btn.setObjectName("quit-btn")
+        self.home_break_btn.clicked.connect(self.on_break_up)
+        home_lay.addWidget(self.home_break_btn)
+        
+        furn_hdr = QLabel("<b>🏡 Home Furnishings</b>", self)
+        furn_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        home_lay.addWidget(furn_hdr)
+        
+        self.home_upgrades_scroll = QScrollArea(self)
+        self.home_upgrades_scroll.setWidgetResizable(True)
+        self.home_upgrades_scroll.setMaximumHeight(140)
+        self.home_upgrades_content = QWidget()
+        self.home_upgrades_layout = QVBoxLayout(self.home_upgrades_content)
+        self.home_upgrades_layout.setContentsMargins(0, 0, 0, 0)
+        self.home_upgrades_layout.setSpacing(4)
+        self.home_upgrades_scroll.setWidget(self.home_upgrades_content)
+        home_lay.addWidget(self.home_upgrades_scroll)
+        
+        self.home_sleep_btn = QPushButton("🛌 Sleep & End Day", self)
+        self.home_sleep_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
+        self.home_sleep_btn.clicked.connect(self.on_sleep_and_end_day)
+        home_lay.addWidget(self.home_sleep_btn)
+        
+        home_lay.addStretch()
+        self.sidebar_stacked.addWidget(home_page) # Index 2
+        
+        layout.addWidget(self.sidebar_stacked)
+        
+        # Options Button (Common)
         self.options_btn = QPushButton("Options", self)
         self.options_btn.clicked.connect(self.open_options)
         layout.addWidget(self.options_btn)
         
-        layout.addStretch()
-        
-        # 6. Bottom Navigation Controls: < place name >
+        # Bottom Navigation Controls: < place name >
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(4)
         
@@ -524,16 +657,241 @@ class MainWindow(QMainWindow):
         if self.current_place == "Home":
             UIAudio.play_music("romance")
             self.stacked_widget.setCurrentIndex(3)
-            self.personal_life_screen.update_ui()
+            self.sidebar_stacked.setCurrentIndex(2)
+            self.update_home_sidebar()
         elif self.current_place == "Restaurant":
             UIAudio.play_music("hotel")
             self.stacked_widget.setCurrentIndex(1)
+            self.sidebar_stacked.setCurrentIndex(0)
             self.gameplay_screen.update_ui(self.evening_phase)
         elif self.current_place == "Bar":
             UIAudio.play_music("bar")
             self.stacked_widget.setCurrentIndex(4)
-            self.tavern_screen.update_ui()
+            self.sidebar_stacked.setCurrentIndex(1)
+            self.update_bar_sidebar()
+
+    def update_bar_sidebar(self):
+        # 1. Update Girls list
+        while self.bar_girls_layout.count():
+            item = self.bar_girls_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+                
+        rom = self.state.romance
+        for girl in rom.candidates:
+            f = QFrame(self.bar_girls_content)
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            fl = QVBoxLayout(f)
+            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setSpacing(2)
             
+            lbl = QLabel(f"<b>{girl.name}</b> ({girl.archetype})<br/><font size='11'>Romance: {girl.romance_level:.0f}/100</font>", self)
+            fl.addWidget(lbl)
+            
+            btn = QPushButton(f"Socialize with {girl.name}", self)
+            btn.clicked.connect(lambda chk=False, g=girl: self.interact_girl(g))
+            fl.addWidget(btn)
+            
+            self.bar_girls_layout.addWidget(f)
+            
+        # 2. Update Applicants list
+        while self.bar_cand_layout.count():
+            item = self.bar_cand_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+                
+        emp = self.state.employees
+        p = self.state.player
+        for cand in emp.available_candidates:
+            f = QFrame(self.bar_cand_content)
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            fl = QVBoxLayout(f)
+            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setSpacing(2)
+            
+            lbl = QLabel(f"<b>{cand.name}</b><br/><font size='11'>Skill: {cand.skill:.1f} | Salary: ${cand.daily_salary:.0f}/day</font>", self)
+            fl.addWidget(lbl)
+            
+            btn = QPushButton(f"Hire (-${cand.daily_salary:.0f})", self)
+            btn.clicked.connect(lambda chk=False, c=cand: self.hire_candidate(c))
+            btn.setEnabled(p.cash >= cand.daily_salary)
+            fl.addWidget(btn)
+            
+            self.bar_cand_layout.addWidget(f)
+
+    def update_home_sidebar(self):
+        p = self.state.player
+        rom = self.state.romance
+        h = self.state.house
+        
+        partner = rom.partner
+        if not partner:
+            self.home_rom_lbl.setText("Status: <b>Single</b>")
+            self.home_rom_progress.setValue(0)
+            self.home_date_btn.setEnabled(False)
+            self.home_ring_btn.setEnabled(False)
+            self.home_propose_btn.setEnabled(False)
+            self.home_break_btn.setEnabled(False)
+        else:
+            self.home_rom_lbl.setText(f"Partner: <b>{partner.name}</b> ({partner.archetype})")
+            self.home_rom_progress.setValue(int(rom.romance_level))
+            self.home_date_btn.setEnabled(p.cash >= 100.0 and p.energy >= 25)
+            self.home_ring_btn.setEnabled(not rom.has_ring and p.cash >= 2500.0)
+            self.home_propose_btn.setEnabled(rom.has_ring and not rom.is_co_owner and rom.romance_level >= 75)
+            self.home_break_btn.setEnabled(True)
+            
+        # Update house upgrades list
+        while self.home_upgrades_layout.count():
+            item = self.home_upgrades_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+                
+        for up in h.available_upgrades:
+            f = QFrame(self.home_upgrades_content)
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            fl = QVBoxLayout(f)
+            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setSpacing(2)
+            
+            lbl = QLabel(f"<b>{up.name}</b> (-${up.cost:.0f})<br/><font size='11'>{up.description}</font>", self)
+            fl.addWidget(lbl)
+            
+            if up.id in h.upgrades:
+                owned_lbl = QLabel("<font color='#3A5F43'><b>Purchased</b></font>", self)
+                fl.addWidget(owned_lbl)
+            else:
+                btn = QPushButton(f"Buy Furnishing (-${up.cost:.0f})", self)
+                btn.clicked.connect(lambda chk=False, u=up: self.buy_house_upgrade(u))
+                btn.setEnabled(p.cash >= up.cost)
+                fl.addWidget(btn)
+                
+            self.home_upgrades_layout.addWidget(f)
+
+    def interact_girl(self, girl):
+        UIAudio.play_click()
+        rom = self.state.romance
+        p = self.state.player
+        
+        opts = [
+            f"Talk to her (10 Energy) [Energy: {p.energy:.0f}]",
+            f"Buy her a drink ($25.00, 10 Energy) [Cash: ${p.cash:.2f}]"
+        ]
+        if girl.romance_level >= 25 and rom.partner != girl:
+            opts.append("Ask out on a Date")
+        if rom.has_ring and rom.partner == girl and not rom.is_co_owner:
+            opts.append("Propose Marriage & Co-Ownership")
+            
+        dlg = ChoicesDialog(f"Socialize with {girl.name}", f"{girl.name} is relaxing at the bar.\nWhat would you like to do?", opts, self)
+        if dlg.exec() and dlg.chosen_index != -1:
+            idx = dlg.chosen_index
+            if idx == 0:
+                success, msg, cash_s, energy_s = rom.talk_to_candidate(girl.name, p.cash, p.energy)
+                if success:
+                    p.adjust_energy(-energy_s)
+                    UIAudio.play_dialogue()
+                    ConfirmDialog(f"Talk with {girl.name}", msg, self).exec()
+                else:
+                    ConfirmDialog("Cannot Talk", msg, self).exec()
+            elif idx == 1:
+                success, msg, cash_s, energy_s = rom.buy_drink(girl.name, p.cash, p.energy)
+                if success:
+                    p.adjust_cash(-cash_s)
+                    p.adjust_energy(-energy_s)
+                    self.state.finance.record_transaction("Misc", cash_s, f"Bought drink for {girl.name}")
+                    UIAudio.play_coin()
+                    ConfirmDialog("Bought Drink", msg, self).exec()
+                else:
+                    ConfirmDialog("Cannot Buy Drink", msg, self).exec()
+            elif idx == 2 and "Ask out" in opts[idx]:
+                success, msg, cash_s, energy_s = rom.start_relationship(girl.name)
+                if success:
+                    UIAudio.play_success()
+                    ConfirmDialog("Relationship Started", msg, self).exec()
+                else:
+                    ConfirmDialog("Cannot Date", msg, self).exec()
+            elif "Propose" in opts[idx]:
+                self.on_propose()
+                
+            self.update_hud()
+
+    def hire_candidate(self, cand):
+        UIAudio.play_click()
+        emp = self.state.employees
+        p = self.state.player
+        if p.cash < cand.daily_salary:
+            ConfirmDialog("Cannot Hire", f"You need at least ${cand.daily_salary:.2f} to hire {cand.name}!", self).exec()
+            return
+            
+        confirm = ConfirmDialog("Hire Employee", f"Hire {cand.name} (Skill: {cand.skill:.1f}) for ${cand.daily_salary:.2f}/day?", self)
+        if confirm.exec():
+            emp.hire_candidate(cand.name)
+            UIAudio.play_success()
+            self.notification_manager.add_notification(f"Hired {cand.name}!", "success")
+            self.update_hud()
+
+    def on_go_date(self):
+        p = self.state.player
+        rom = self.state.romance
+        h = self.state.house
+        mult = 1.0 + h.get_romance_progress_bonus()
+        success, msg, cash_spent, energy_spent = rom.go_on_date(p.cash, p.energy, progress_multiplier=mult)
+        if success:
+            p.adjust_cash(-cash_spent)
+            p.adjust_energy(-energy_spent)
+            self.state.finance.record_transaction("Date", cash_spent, f"Went on date with {rom.partner_name}")
+            UIAudio.play_success()
+            ConfirmDialog("Date Night", msg, self).exec()
+            self.update_hud()
+        else:
+            ConfirmDialog("Cannot Date", msg, self).exec()
+
+    def on_buy_ring(self):
+        p = self.state.player
+        rom = self.state.romance
+        success, msg, cost = rom.buy_engagement_ring(p.cash)
+        if success:
+            p.adjust_cash(-cost)
+            self.state.finance.record_transaction("Ring", cost, "Purchased Diamond Engagement Ring")
+            UIAudio.play_coin()
+            ConfirmDialog("Diamond Ring", msg, self).exec()
+            self.update_hud()
+        else:
+            ConfirmDialog("Cannot Buy Ring", msg, self).exec()
+
+    def on_propose(self):
+        p = self.state.player
+        rom = self.state.romance
+        h = self.state.house
+        success, msg = rom.propose_co_ownership(h.purchased)
+        if success:
+            UIAudio.play_success()
+            ConfirmDialog("Proposal Accepted!", msg, self).exec()
+            self.update_hud()
+        else:
+            ConfirmDialog("Proposal Declined", msg, self).exec()
+
+    def on_break_up(self):
+        rom = self.state.romance
+        confirm = ConfirmDialog("Break Up", f"Are you sure you want to break up with {rom.partner_name}?", self)
+        if confirm.exec():
+            msg = rom.break_up()
+            UIAudio.play_notify()
+            ConfirmDialog("Relationship Ended", msg, self).exec()
+            self.update_hud()
+
+    def buy_house_upgrade(self, upgrade):
+        p = self.state.player
+        h = self.state.house
+        success, msg, cost = h.buy_upgrade(upgrade.id, p.cash)
+        if success:
+            p.adjust_cash(-cost)
+            self.state.finance.record_transaction("Home", cost, f"Purchased home upgrade {upgrade.name}")
+            UIAudio.play_coin()
+            ConfirmDialog("Furnishing Purchased", msg, self).exec()
+            self.update_hud()
+        else:
+            ConfirmDialog("Cannot Buy", msg, self).exec()
+
     def on_nav_left(self):
         UIAudio.play_click()
         unlocked = self.get_unlocked_places()
@@ -672,6 +1030,11 @@ class MainWindow(QMainWindow):
             f"Staff: <b>{emp_str}</b>"
         )
         self.sidebar_status_lbl.setText(status_text)
+            
+        if self.current_place == "Bar":
+            self.update_bar_sidebar()
+        elif self.current_place == "Home":
+            self.update_home_sidebar()
             
         if self.stacked_widget.currentIndex() == 1:
             self.gameplay_screen.update_ui(self.evening_phase)
