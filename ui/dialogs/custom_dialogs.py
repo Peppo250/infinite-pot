@@ -249,7 +249,7 @@ class PlaceUpgradesDialog(GameDialog):
     def __init__(self, state, parent=None):
         super().__init__("Place Upgrades & Modifications", parent)
         self.state = state
-        self.resize(500, 450)
+        self.resize(500, 520)
         
         # 1. Modify Shop Name
         name_frame = QFrame(self)
@@ -274,6 +274,17 @@ class PlaceUpgradesDialog(GameDialog):
         self.loc_btn.clicked.connect(self.on_upgrade_location)
         loc_layout.addWidget(self.loc_btn)
         self.layout.addWidget(loc_frame)
+
+        # 2.5 House purchase section
+        self.house_frame = QFrame(self)
+        self.house_frame.setStyleSheet("border: 2px solid #5B3923; padding: 5px;")
+        house_layout = QVBoxLayout(self.house_frame)
+        self.house_lbl = QLabel(self)
+        house_layout.addWidget(self.house_lbl)
+        self.house_btn = QPushButton("Purchase Cottage (-$2500.00)", self)
+        self.house_btn.clicked.connect(self.on_purchase_house)
+        house_layout.addWidget(self.house_btn)
+        self.layout.addWidget(self.house_frame)
         
         # 3. Buyable shop upgrades list (Scroll area)
         up_lbl = QLabel("<b>Available Diner Upgrades:</b>", self)
@@ -300,7 +311,23 @@ class PlaceUpgradesDialog(GameDialog):
             self.state.restaurant.name = new_name
             UIAudio.play_success()
             ConfirmDialog("Success", f"Restaurant renamed to '{new_name}'!", self).exec()
-            # Safely refresh HUD in parent window
+            p_win = self.parent()
+            while p_win and not hasattr(p_win, 'update_hud'):
+                p_win = p_win.parent()
+            if p_win and hasattr(p_win, 'update_hud'):
+                p_win.update_hud()
+                
+    def on_purchase_house(self):
+        p = self.state.player
+        h = self.state.house
+        if p.cash >= 2500.0:
+            p.adjust_cash(-2500.0)
+            h.purchased = True
+            p.has_house = True
+            self.state.finance.record_transaction("Upgrade", 2500.0, "Purchased cottage")
+            UIAudio.play_coin()
+            ConfirmDialog("Success", "Congratulations! You purchased a cozy cottage. Home navigation is now unlocked!", self).exec()
+            self.update_ui()
             p_win = self.parent()
             while p_win and not hasattr(p_win, 'update_hud'):
                 p_win = p_win.parent()
@@ -310,6 +337,9 @@ class PlaceUpgradesDialog(GameDialog):
     def update_ui(self):
         r = self.state.restaurant
         p = self.state.player
+        h = self.state.house
+        partner = self.state.romance.partner
+        
         # Location details
         lvl = r.level
         max_level = 4
@@ -331,6 +361,21 @@ class PlaceUpgradesDialog(GameDialog):
             self.loc_btn.setText("Max Location Reached")
             self.loc_btn.setEnabled(False)
             
+        # Update house details
+        if h.purchased:
+            self.house_lbl.setText("House Status: <b>Cozy Cottage Purchased</b> 🏡")
+            self.house_btn.setText("Cottage Purchased")
+            self.house_btn.setEnabled(False)
+        else:
+            if partner is None:
+                self.house_lbl.setText("House Status: <b>Locked</b><br/>(Requires a romantic relationship first!)")
+                self.house_btn.setEnabled(False)
+                self.house_btn.setText("Purchase Cottage")
+            else:
+                self.house_lbl.setText("House Status: <b>Cottage Available</b> 🏡")
+                self.house_btn.setEnabled(p.cash >= 2500.0)
+                self.house_btn.setText("Purchase Cottage (-$2500.00)")
+                
         # Scroll list
         while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
@@ -393,6 +438,9 @@ class PlaceUpgradesDialog(GameDialog):
             self.update_ui()
             p_win = self.parent()
             while p_win and not hasattr(p_win, 'update_hud'):
+                p_win = p_win.parent()
+            if p_win and hasattr(p_win, 'update_hud'):
+                p_win.update_hud()
                 p_win = p_win.parent()
             if p_win and hasattr(p_win, 'update_hud'):
                 p_win.update_hud()
