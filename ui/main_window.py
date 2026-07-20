@@ -315,19 +315,20 @@ class MainWindow(QMainWindow):
     def init_sidebar_widget(self):
         self.sidebar_widget = QFrame(self)
         self.sidebar_widget.setObjectName("sidebar-frame")
+        self.sidebar_widget.setMaximumWidth(220)
         self.sidebar_widget.setStyleSheet(f"""
             QFrame#sidebar-frame {{
                 background-color: {ThemeManager.CREAM};
-                border-left: 4px solid {ThemeManager.DARK_BROWN};
-                padding: 6px;
+                border-left: 2px solid {ThemeManager.DARK_BROWN};
+                padding: 4px;
             }}
             QPushButton {{
                 font-family: VT323, monospace;
-                font-size: 15px;
+                font-size: 13px;
                 background-color: {ThemeManager.CREAM};
-                border: 2px solid {ThemeManager.DARK_BROWN};
-                padding: 6px;
-                border-radius: 6px;
+                border: 1.5px solid {ThemeManager.DARK_BROWN};
+                padding: 4px 6px;
+                border-radius: 4px;
             }}
             QPushButton:hover {{
                 background-color: #E25E3E;
@@ -336,8 +337,8 @@ class MainWindow(QMainWindow):
         """)
         
         layout = QVBoxLayout(self.sidebar_widget)
-        layout.setContentsMargins(5, 5, 5, 5)
-        layout.setSpacing(8)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(6)
         
         # Stacked widget for contextual sidebar pages
         self.sidebar_stacked = QStackedWidget(self)
@@ -348,7 +349,7 @@ class MainWindow(QMainWindow):
         rest_page = QWidget(self)
         rest_lay = QVBoxLayout(rest_page)
         rest_lay.setContentsMargins(0, 0, 0, 0)
-        rest_lay.setSpacing(8)
+        rest_lay.setSpacing(6)
         
         self.sim_btn = QPushButton("Start Day", self)
         self.sim_btn.setObjectName("sim-btn")
@@ -358,7 +359,7 @@ class MainWindow(QMainWindow):
         
         self.sidebar_status_lbl = QLabel(self)
         self.sidebar_status_lbl.setWordWrap(True)
-        self.sidebar_status_lbl.setStyleSheet(f"font-size: 13px; line-height: 1.35; border: 2px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
+        self.sidebar_status_lbl.setStyleSheet(f"font-size: 11px; line-height: 1.2; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 4px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
         rest_lay.addWidget(self.sidebar_status_lbl)
         
         self.stop_btn = QPushButton("Stop Work", self)
@@ -389,10 +390,10 @@ class MainWindow(QMainWindow):
         bar_page = QWidget(self)
         bar_lay = QVBoxLayout(bar_page)
         bar_lay.setContentsMargins(0, 0, 0, 0)
-        bar_lay.setSpacing(6)
+        bar_lay.setSpacing(4)
         
         soc_hdr = QLabel("<b>🌹 Socialize</b>", self)
-        soc_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        soc_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(soc_hdr)
         
         self.bar_girls_scroll = QScrollArea(self)
@@ -401,12 +402,12 @@ class MainWindow(QMainWindow):
         self.bar_girls_content = QWidget()
         self.bar_girls_layout = QVBoxLayout(self.bar_girls_content)
         self.bar_girls_layout.setContentsMargins(0, 0, 0, 0)
-        self.bar_girls_layout.setSpacing(4)
+        self.bar_girls_layout.setSpacing(3)
         self.bar_girls_scroll.setWidget(self.bar_girls_content)
         bar_lay.addWidget(self.bar_girls_scroll)
         
         app_hdr = QLabel("<b>👥 Job Applicants</b>", self)
-        app_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        app_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(app_hdr)
         
         self.bar_cand_scroll = QScrollArea(self)
@@ -415,7 +416,7 @@ class MainWindow(QMainWindow):
         self.bar_cand_content = QWidget()
         self.bar_cand_layout = QVBoxLayout(self.bar_cand_content)
         self.bar_cand_layout.setContentsMargins(0, 0, 0, 0)
-        self.bar_cand_layout.setSpacing(4)
+        self.bar_cand_layout.setSpacing(3)
         self.bar_cand_scroll.setWidget(self.bar_cand_content)
         bar_lay.addWidget(self.bar_cand_scroll)
         
@@ -428,15 +429,15 @@ class MainWindow(QMainWindow):
         home_page = QWidget(self)
         home_lay = QVBoxLayout(home_page)
         home_lay.setContentsMargins(0, 0, 0, 0)
-        home_lay.setSpacing(6)
+        home_lay.setSpacing(4)
         
         rom_hdr = QLabel("<b>🌹 Dating & Romance</b>", self)
-        rom_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        rom_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(rom_hdr)
         
         self.home_rom_lbl = QLabel(self)
         self.home_rom_lbl.setWordWrap(True)
-        self.home_rom_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
+        self.home_rom_lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
         home_lay.addWidget(self.home_rom_lbl)
         
         self.home_rom_progress = QProgressBar(self)
@@ -462,7 +463,7 @@ class MainWindow(QMainWindow):
         home_lay.addWidget(self.home_break_btn)
         
         furn_hdr = QLabel("<b>🏡 Home Furnishings</b>", self)
-        furn_hdr.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN};")
+        furn_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(furn_hdr)
         
         self.home_upgrades_scroll = QScrollArea(self)
@@ -471,7 +472,7 @@ class MainWindow(QMainWindow):
         self.home_upgrades_content = QWidget()
         self.home_upgrades_layout = QVBoxLayout(self.home_upgrades_content)
         self.home_upgrades_layout.setContentsMargins(0, 0, 0, 0)
-        self.home_upgrades_layout.setSpacing(4)
+        self.home_upgrades_layout.setSpacing(3)
         self.home_upgrades_scroll.setWidget(self.home_upgrades_content)
         home_lay.addWidget(self.home_upgrades_scroll)
         
@@ -495,17 +496,17 @@ class MainWindow(QMainWindow):
         nav_layout.setSpacing(4)
         
         self.left_nav_btn = QPushButton("<", self)
-        self.left_nav_btn.setMaximumWidth(40)
+        self.left_nav_btn.setMaximumWidth(30)
         self.left_nav_btn.clicked.connect(self.on_nav_left)
         nav_layout.addWidget(self.left_nav_btn)
         
         self.place_label = QLabel("Restaurant", self)
         self.place_label.setAlignment(Qt.AlignCenter)
-        self.place_label.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.place_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         nav_layout.addWidget(self.place_label)
         
         self.right_nav_btn = QPushButton(">", self)
-        self.right_nav_btn.setMaximumWidth(40)
+        self.right_nav_btn.setMaximumWidth(30)
         self.right_nav_btn.clicked.connect(self.on_nav_right)
         nav_layout.addWidget(self.right_nav_btn)
         
@@ -680,15 +681,17 @@ class MainWindow(QMainWindow):
         rom = self.state.romance
         for girl in rom.characters:
             f = QFrame(self.bar_girls_content)
-            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
-            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setContentsMargins(3, 3, 3, 3)
             fl.setSpacing(2)
             
-            lbl = QLabel(f"<b>{girl.name}</b> ({girl.archetype})<br/><font size='11'>Romance: {girl.romance_level:.0f}/100</font>", self)
+            lbl = QLabel(f"<b>{girl.name}</b> ({girl.archetype})<br/><font size='1'>Romance: {girl.romance_level:.0f}/100</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             fl.addWidget(lbl)
             
             btn = QPushButton(f"Socialize with {girl.name}", self)
+            btn.setStyleSheet("font-size: 11px; padding: 2px 4px;")
             btn.clicked.connect(lambda chk=False, g=girl: self.interact_girl(g))
             fl.addWidget(btn)
             
@@ -705,15 +708,17 @@ class MainWindow(QMainWindow):
         cand_list = getattr(emp, 'available_candidates', emp.candidates)
         for cand in cand_list:
             f = QFrame(self.bar_cand_content)
-            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
-            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setContentsMargins(3, 3, 3, 3)
             fl.setSpacing(2)
             
-            lbl = QLabel(f"<b>{cand.name}</b><br/><font size='11'>Skill: {cand.skill:.1f} | Salary: ${cand.daily_salary:.0f}/day</font>", self)
+            lbl = QLabel(f"<b>{cand.name}</b><br/><font size='1'>Skill: {cand.skill:.1f} | ${cand.daily_salary:.0f}/day</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             fl.addWidget(lbl)
             
             btn = QPushButton(f"Hire (-${cand.daily_salary:.0f})", self)
+            btn.setStyleSheet("font-size: 11px; padding: 2px 4px;")
             btn.clicked.connect(lambda chk=False, c=cand: self.hire_candidate(c))
             btn.setEnabled(p.cash >= cand.daily_salary)
             fl.addWidget(btn)
@@ -749,19 +754,22 @@ class MainWindow(QMainWindow):
                 
         for up in h.available_upgrades:
             f = QFrame(self.home_upgrades_content)
-            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px; background-color: rgba(255, 255, 255, 0.4);")
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
-            fl.setContentsMargins(4, 4, 4, 4)
+            fl.setContentsMargins(3, 3, 3, 3)
             fl.setSpacing(2)
             
-            lbl = QLabel(f"<b>{up.name}</b> (-${up.cost:.0f})<br/><font size='11'>{up.description}</font>", self)
+            lbl = QLabel(f"<b>{up.name}</b> (-${up.cost:.0f})<br/><font size='1'>{up.description}</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             fl.addWidget(lbl)
             
             if up.id in h.upgrades:
                 owned_lbl = QLabel("<font color='#3A5F43'><b>Purchased</b></font>", self)
+                owned_lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
                 fl.addWidget(owned_lbl)
             else:
-                btn = QPushButton(f"Buy Furnishing (-${up.cost:.0f})", self)
+                btn = QPushButton(f"Buy (-${up.cost:.0f})", self)
+                btn.setStyleSheet("font-size: 11px; padding: 2px 4px;")
                 btn.clicked.connect(lambda chk=False, u=up: self.buy_house_upgrade(u))
                 btn.setEnabled(p.cash >= up.cost)
                 fl.addWidget(btn)
