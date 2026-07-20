@@ -315,19 +315,20 @@ class MainWindow(QMainWindow):
     def init_sidebar_widget(self):
         self.sidebar_widget = QFrame(self)
         self.sidebar_widget.setObjectName("sidebar-frame")
-        self.sidebar_widget.setMaximumWidth(220)
+        self.sidebar_widget.setMinimumWidth(280)
+        self.sidebar_widget.setMaximumWidth(340)
         self.sidebar_widget.setStyleSheet(f"""
             QFrame#sidebar-frame {{
                 background-color: {ThemeManager.CREAM};
                 border-left: 2px solid {ThemeManager.DARK_BROWN};
-                padding: 4px;
+                padding: 6px;
             }}
             QPushButton {{
                 font-family: VT323, monospace;
-                font-size: 13px;
+                font-size: 14px;
                 background-color: {ThemeManager.CREAM};
                 border: 1.5px solid {ThemeManager.DARK_BROWN};
-                padding: 4px 6px;
+                padding: 5px 8px;
                 border-radius: 4px;
             }}
             QPushButton:hover {{
@@ -359,7 +360,7 @@ class MainWindow(QMainWindow):
         
         self.sidebar_status_lbl = QLabel(self)
         self.sidebar_status_lbl.setWordWrap(True)
-        self.sidebar_status_lbl.setStyleSheet(f"font-size: 11px; line-height: 1.2; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 4px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
+        self.sidebar_status_lbl.setStyleSheet(f"font-size: 12px; line-height: 1.35; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
         rest_lay.addWidget(self.sidebar_status_lbl)
         
         self.stop_btn = QPushButton("Stop Work", self)
