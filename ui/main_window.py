@@ -823,18 +823,19 @@ class MainWindow(QMainWindow):
         UIAudio.play_click()
         emp = self.state.employees
         p = self.state.player
+        max_emp = self.state.restaurant.max_employees
         if p.cash < cand.daily_salary:
             ConfirmDialog("Cannot Hire", f"You need at least ${cand.daily_salary:.2f} to hire {cand.name}!", self).exec()
             return
             
         confirm = ConfirmDialog("Hire Employee", f"Hire {cand.name} (Skill: {cand.skill:.1f}) for ${cand.daily_salary:.2f}/day?", self)
         if confirm.exec():
-            success = emp.hire_employee(cand.name)
+            success, msg = emp.hire_employee(cand.name, max_emp)
             if success:
                 UIAudio.play_success()
-                self.notification_manager.add_notification(f"Hired {cand.name}!", "success")
+                self.notification_manager.add_notification(msg, "success")
             else:
-                ConfirmDialog("Hire Failed", f"Could not hire {cand.name}. Max staff capacity reached or candidate unavailable.", self).exec()
+                ConfirmDialog("Hire Failed", msg, self).exec()
             self.update_hud()
 
     def on_go_date(self):
@@ -885,7 +886,7 @@ class MainWindow(QMainWindow):
         rom = self.state.romance
         confirm = ConfirmDialog("Break Up", f"Are you sure you want to break up with {rom.partner_name}?", self)
         if confirm.exec():
-            msg = rom.break_up()
+            success, msg = rom.break_up()
             UIAudio.play_notify()
             ConfirmDialog("Relationship Ended", msg, self).exec()
             self.update_hud()

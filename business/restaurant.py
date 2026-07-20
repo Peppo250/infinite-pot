@@ -96,6 +96,10 @@ class Restaurant:
         return base_cap
 
     @property
+    def max_employees(self) -> int:
+        return self.current_config.max_employees
+
+    @property
     def price_per_meal_range(self) -> tuple[float, float]:
         min_p, max_p = self.current_config.price_per_meal_range
         if "sebastian_recipes" in self.upgrades:
