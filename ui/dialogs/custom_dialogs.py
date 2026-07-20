@@ -821,6 +821,25 @@ class OptionsDialog(GameDialog):
         self.sfx_slider.setValue(90)
         self.layout.addWidget(self.sfx_slider)
         
+        # 3.5. World Speed Settings
+        p_win_speed = self.parent()
+        while p_win_speed and not hasattr(p_win_speed, 'world_speed'):
+            p_win_speed = p_win_speed.parent()
+        current_speed = getattr(p_win_speed, "world_speed", 1.0) if p_win_speed else 1.0
+        
+        self.speed_widget = QWidget(self)
+        speed_lay = QHBoxLayout(self.speed_widget)
+        speed_lay.setContentsMargins(0, 0, 0, 0)
+        self.speed_lbl = QLabel(f"<b>World Speed: {int(current_speed)}x</b>", self)
+        self.speed_lbl.setMinimumWidth(150)
+        self.speed_slider = QSlider(Qt.Horizontal, self)
+        self.speed_slider.setRange(1, 20)
+        self.speed_slider.setValue(int(current_speed))
+        self.speed_slider.valueChanged.connect(self.on_speed_changed)
+        speed_lay.addWidget(self.speed_lbl)
+        speed_lay.addWidget(self.speed_slider)
+        self.layout.addWidget(self.speed_widget)
+        
         # 4. Quit Game
         quit_btn = QPushButton("Quit Game to Desktop", self)
         quit_btn.setObjectName("quit-btn")
@@ -835,6 +854,9 @@ class OptionsDialog(GameDialog):
         close_btn = QPushButton("Close Options", self)
         close_btn.clicked.connect(self.accept)
         self.layout.addWidget(close_btn)
+        
+    def on_speed_changed(self, val):
+        self.speed_lbl.setText(f"<b>World Speed: {val}x</b>")
         
     def on_apply(self):
         UIAudio.play_success()
@@ -854,8 +876,14 @@ class OptionsDialog(GameDialog):
                 p_win.showFullScreen()
             else:
                 p_win.showNormal()
+                
+            # Apply world speed
+            p_win.world_speed = float(self.speed_slider.value())
+            if hasattr(p_win, 'day_clock_timer') and p_win.day_clock_timer.isActive():
+                interval_ms = int(10000 / p_win.world_speed)
+                p_win.day_clock_timer.start(interval_ms)
             
-        ConfirmDialog("Settings Saved", "Graphics and audio settings applied successfully!", self).exec()
+        ConfirmDialog("Settings Saved", "Graphics, audio, and speed settings applied successfully!", self).exec()
         self.accept()
         
     def on_quit(self):

@@ -64,7 +64,7 @@ class NotificationManager(QWidget):
         self.setAttribute(Qt.WA_TransparentForMouseEvents)
         
         self.layout = QVBoxLayout(self)
-        self.layout.setAlignment(Qt.AlignTop | Qt.AlignRight)
+        self.layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.layout.setContentsMargins(10, 10, 10, 10)
         self.layout.setSpacing(8)
         
@@ -78,8 +78,8 @@ class NotificationManager(QWidget):
             parent_rect = self.parentWidget().rect()
             width = 300
             height = parent_rect.height() - 80
-            # Position at the top right corner
-            self.setGeometry(parent_rect.width() - width - 20, 70, width, height)
+            # Position at the top left corner
+            self.setGeometry(20, 70, width, height)
 
     def add_notification(self, message: str, alert_type: str = "info"):
         """Spawn a notification toast."""

@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         self.target_work_hours = 8
         self.day_clock_timer = QTimer(self)
         self.day_clock_timer.timeout.connect(self.on_game_clock_tick)
+        self.world_speed = 1.0
         
         # Places cycle state for bottom-right navigation
         self.current_place = "Restaurant"
@@ -327,6 +328,13 @@ class MainWindow(QMainWindow):
         self.sidebar_status_lbl.setStyleSheet(f"font-size: 13px; line-height: 1.35; border: 2px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
         layout.addWidget(self.sidebar_status_lbl)
         
+        self.stop_btn = QPushButton("Stop Work", self)
+        self.stop_btn.setObjectName("stop-btn")
+        self.stop_btn.setStyleSheet("font-weight: bold; background-color: #F8C4B4;")
+        self.stop_btn.clicked.connect(self.on_stop_work_clicked)
+        self.stop_btn.setVisible(False)
+        layout.addWidget(self.stop_btn)
+        
         # 2. Upgrades Button
         self.upgrades_btn = QPushButton("Place Upgrades", self)
         self.upgrades_btn.clicked.connect(self.open_place_upgrades)
@@ -380,7 +388,7 @@ class MainWindow(QMainWindow):
             return
             
         if not self.is_working:
-            # Start workday directly without prompt
+            # Start Day
             self.active_hours_passed = 0
             self.target_work_hours = 12 # maximum overtime cutoff
             self.is_working = True
@@ -388,31 +396,51 @@ class MainWindow(QMainWindow):
             
             self.state.finance.start_new_day()
             
-            # Button becomes "Stop Work"
-            self.sim_btn.setText("Stop Work")
-            self.sim_btn.setStyleSheet("font-weight: bold; background-color: #F8C4B4;")
+            # Button becomes "Pause"
+            self.sim_btn.setText("Pause")
+            self.sim_btn.setStyleSheet("font-weight: bold; background-color: #E25E3E; color: white;")
+            self.stop_btn.setVisible(True)
             
-            # Start ticking clock (every 10s is 1 hr)
-            self.day_clock_timer.start(10000)
-            self.notification_manager.add_notification("Diner is open! Time is progressing.", "info")
+            # Start ticking clock based on world speed
+            interval_ms = int(10000 / self.world_speed)
+            self.day_clock_timer.start(interval_ms)
+            self.notification_manager.add_notification("Workday started! Timer is progressing.", "info")
             self.update_hud()
         else:
-            # Stopped by the player. Apply floor function.
-            # (QTimer ticks already represent complete integer hours simulated, any fraction of the hour is floored/discarded)
-            self.day_clock_timer.stop()
-            self.is_working = False
-            self.evening_phase = True
-            UIAudio.play_success()
-            
-            # Present Daily Report Ledger popup
-            dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
-            dlg.exec()
-            
-            # Button becomes "Sleep & End Day"
-            self.sim_btn.setText("Sleep & End Day")
-            self.sim_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
-            self.notification_manager.add_notification(f"Workday stopped after {self.active_hours_passed} hours. Evening phase started.", "info")
+            # Toggle Pause/Continue
+            if self.is_paused:
+                self.is_paused = False
+                self.sim_btn.setText("Pause")
+                self.sim_btn.setStyleSheet("font-weight: bold; background-color: #E25E3E; color: white;")
+                interval_ms = int(10000 / self.world_speed)
+                self.day_clock_timer.start(interval_ms)
+                self.notification_manager.add_notification("Workday resumed.", "info")
+            else:
+                self.is_paused = True
+                self.sim_btn.setText("Continue")
+                self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
+                self.day_clock_timer.stop()
+                self.notification_manager.add_notification("Workday paused.", "info")
             self.update_hud()
+
+    def on_stop_work_clicked(self):
+        UIAudio.play_click()
+        self.day_clock_timer.stop()
+        self.is_working = False
+        self.is_paused = False
+        self.evening_phase = True
+        self.stop_btn.setVisible(False)
+        UIAudio.play_success()
+        
+        # Present Daily Report Ledger popup
+        dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
+        dlg.exec()
+        
+        # Main button becomes Sleep & End Day
+        self.sim_btn.setText("Sleep & End Day")
+        self.sim_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
+        self.notification_manager.add_notification(f"Workday stopped after {self.active_hours_passed} hours. Evening phase started.", "info")
+        self.update_hud()
 
     def on_game_clock_tick(self):
         if not self.is_working or self.is_paused:
@@ -421,6 +449,7 @@ class MainWindow(QMainWindow):
         if self.state.player.energy <= 0.0:
             self.day_clock_timer.stop()
             self.is_working = False
+            self.stop_btn.setVisible(False)
             UIAudio.play_sad()
             ConfirmDialog("Exhausted!", "You ran out of energy and passed out!\nYour staff closed down the shop.", self).exec()
             self.on_sleep_and_end_day()
@@ -451,6 +480,7 @@ class MainWindow(QMainWindow):
             self.day_clock_timer.stop()
             self.is_working = False
             self.evening_phase = True
+            self.stop_btn.setVisible(False)
             UIAudio.play_success()
             
             ConfirmDialog("Shift Ended", "Maximum shift hours reached! Closing shop.", self).exec()
@@ -535,9 +565,10 @@ class MainWindow(QMainWindow):
         self.is_paused = False
         self.active_hours_passed = 0
         
-        # Reset button text
+        # Reset button and controls
         self.sim_btn.setText("Start Day")
         self.sim_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2;")
+        self.stop_btn.setVisible(False)
         
         # 1. Check and trigger random events BEFORE sleep
         triggered_event = self.state.events.check_and_trigger_event(self.state)
