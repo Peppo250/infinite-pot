@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt
 
 from engine.state import GameState
 from ui.main_window import MainWindow
-from ui.dialogs.custom_dialogs import OptionsDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, ConfirmDialog, ChoicesDialog, ReceiptDialog
+from ui.dialogs.custom_dialogs import OptionsDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, ConfirmDialog, ChoicesDialog, ReceiptDialog, DevSetupDialog
 
 # Ensure QApplication exists for PySide6 widgets
 @pytest.fixture(scope="session")
@@ -25,6 +25,7 @@ def main_window(qapp, monkeypatch):
     monkeypatch.setattr(PlaceUpgradesDialog, "exec", lambda self: True)
     monkeypatch.setattr(MoneyMgmtDialog, "exec", lambda self: True)
     monkeypatch.setattr(RelationshipMgmtDialog, "exec", lambda self: True)
+    monkeypatch.setattr(DevSetupDialog, "exec", lambda self: True)
     
     state = GameState()
     window = MainWindow(state)
@@ -250,3 +251,10 @@ def test_multiple_partners_selection_and_breakup(main_window):
     dlg.on_break_up_dlg()
     assert g1.is_partner is False
     assert g2.is_partner is True
+
+def test_dev_setup_dialog(main_window):
+    dlg = DevSetupDialog(current_level=2, current_cash=5000.0, parent=main_window)
+    dlg.level_combo.setCurrentIndex(2) # Level 3
+    dlg.cash_spin.setValue(15000.0)
+    assert dlg.get_level() == 3
+    assert dlg.get_cash() == 15000.0

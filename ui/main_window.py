@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.widgets.notifications import NotificationManager
-from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, OptionsDialog
+from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, OptionsDialog, DevSetupDialog
 
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.gameplay import GameplayScreen
@@ -156,13 +156,13 @@ class MainWindow(QMainWindow):
         hud_layout.setSpacing(10)
         
         # 1. Shop Name
-        self.shop_name_lbl = QLabel(self)
-        self.shop_name_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.shop_name_lbl = QLabel(self.state.restaurant.name, self)
+        self.shop_name_lbl.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.shop_name_lbl)
         
         # 2. Cash
-        self.cash_lbl = QLabel(self)
-        self.cash_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #3A5F43;")
+        self.cash_lbl = QLabel(f"Cash: ${self.state.player.cash:.2f}", self)
+        self.cash_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.cash_lbl)
         
         # 3. Energy
@@ -290,8 +290,15 @@ class MainWindow(QMainWindow):
         if dlg.exec():
             name = dlg.get_text()
             self.state.restaurant.custom_name = name
+            
+            # Dev Setup Dialog for starting level & cash
+            dev_dlg = DevSetupDialog(self.state.restaurant.level, self.state.player.cash, self)
+            if dev_dlg.exec():
+                self.state.restaurant.level = dev_dlg.get_level()
+                self.state.player.cash = dev_dlg.get_cash()
+                
             self.show_gameplay()
-            self.notification_manager.add_notification("Journey started! Welcome to Level 0.", "success")
+            self.add_log(f"Started journey for '{name}' at Level {self.state.restaurant.level} with ${self.state.player.cash:.2f} cash!")
 
     def on_restart_game(self):
         # Reinstate state from config

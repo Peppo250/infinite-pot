@@ -897,10 +897,51 @@ class RelationshipMgmtDialog(GameDialog):
             if p_win and hasattr(p_win, 'update_hud'):
                 p_win.update_hud()
 
+class DevSetupDialog(GameDialog):
+    def __init__(self, current_level=1, current_cash=100.0, parent=None):
+        super().__init__("🛠️ Dev Mode: Setup Level & Cash", parent)
+        self.resize(440, 280)
+        
+        self.layout.addWidget(QLabel("<b>[Dev Mode] Select Restaurant Level:</b>", self))
+        self.level_combo = QComboBox(self)
+        self.level_combo.addItems([
+            "Level 1 - Second-Hand Roadside Cart",
+            "Level 2 - Own Roadside Cart",
+            "Level 3 - Edge-of-Town Shop (Bar Unlocked)",
+            "Level 4 - Town Restaurant (Max Tier)"
+        ])
+        self.level_combo.setCurrentIndex(max(0, min(3, current_level - 1)))
+        self.layout.addWidget(self.level_combo)
+        
+        self.layout.addWidget(QLabel("<b>[Dev Mode] Starting Cash Amount ($):</b>", self))
+        self.cash_spin = QDoubleSpinBox(self)
+        self.cash_spin.setRange(0.0, 1000000.0)
+        self.cash_spin.setValue(float(current_cash))
+        self.cash_spin.setSingleStep(500.0)
+        self.cash_spin.setPrefix("$ ")
+        self.layout.addWidget(self.cash_spin)
+        
+        btn_box = QHBoxLayout()
+        ok_btn = QPushButton("Apply Dev Settings", self)
+        ok_btn.setObjectName("primary-action-btn")
+        ok_btn.clicked.connect(self.accept)
+        btn_box.addWidget(ok_btn)
+        
+        cancel_btn = QPushButton("Cancel", self)
+        cancel_btn.clicked.connect(self.reject)
+        btn_box.addWidget(cancel_btn)
+        self.layout.addLayout(btn_box)
+        
+    def get_level(self) -> int:
+        return self.level_combo.currentIndex() + 1
+        
+    def get_cash(self) -> float:
+        return self.cash_spin.value()
+
 class OptionsDialog(GameDialog):
     def __init__(self, parent=None):
         super().__init__("Settings Options", parent)
-        self.resize(400, 380)
+        self.resize(400, 420)
         
         p_win_speed = self.parent()
         while p_win_speed and not hasattr(p_win_speed, 'world_speed'):
@@ -950,6 +991,11 @@ class OptionsDialog(GameDialog):
         speed_lay.addWidget(self.speed_slider)
         self.layout.addWidget(self.speed_widget)
         
+        # 3.8 Dev Setup Button
+        dev_btn = QPushButton("🛠️ Dev Mode: Change Cash & Level", self)
+        dev_btn.clicked.connect(self.on_dev_setup)
+        self.layout.addWidget(dev_btn)
+        
         # 4. Quit Game
         quit_btn = QPushButton("Quit Game to Desktop", self)
         quit_btn.setObjectName("quit-btn")
@@ -959,6 +1005,22 @@ class OptionsDialog(GameDialog):
         close_btn = QPushButton("Close Options", self)
         close_btn.clicked.connect(self.accept)
         self.layout.addWidget(close_btn)
+        
+    def on_dev_setup(self):
+        p_win = self.parent()
+        while p_win and not hasattr(p_win, 'state'):
+            p_win = p_win.parent()
+        if p_win:
+            dlg = DevSetupDialog(p_win.state.restaurant.level, p_win.state.player.cash, self)
+            if dlg.exec():
+                p_win.state.restaurant.level = dlg.get_level()
+                p_win.state.player.cash = dlg.get_cash()
+                UIAudio.play_coin()
+                if hasattr(p_win, 'update_place_screen'):
+                    p_win.update_place_screen()
+                if hasattr(p_win, 'update_hud'):
+                    p_win.update_hud()
+                ConfirmDialog("Dev Setup Applied", f"Updated to Level {dlg.get_level()} and ${dlg.get_cash():.2f} cash!", self).exec()
         
     def on_speed_changed(self, val):
         self.speed_lbl.setText(f"<b>World Speed: {val}x</b>")
