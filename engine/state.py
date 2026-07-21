@@ -248,20 +248,28 @@ class GameState:
         p = self.romance.partner
         active_employees = self.employees.get_active_employees()
         
-        # Spouse / Partner helper check (same weekend / overtime rule)
-        partner_helps_today = False
-        if p:
-            if p.is_co_owner:
-                # Wife helps during weekends or if working late hours (> 8 hours total)
-                if self.day_name in ["Friday", "Saturday", "Sunday"] or current_hour > 8:
-                    partner_helps_today = True
-            elif p.is_partner and (self.day_name in p.schedule):
-                partner_helps_today = True
+        # Spouse / Partner helper check
+        helping_girls = self.romance.get_helping_characters(self.day_name)
+        partner_helps_today = len(helping_girls) > 0
                 
-        partner_boost = p.attraction_boost if partner_helps_today else 0.0
+        partner_boost = sum(g.attraction_boost * (1.5 if g.is_co_owner else 1.0) for g in helping_girls)
         drain = self.competitor.get_attraction_drain()
         attraction = self.restaurant.calculate_attraction(competitor_impact=drain) + partner_boost
         
+        # Characteristic boosts from helping partners/wives
+        sales_mult = 1.0
+        hourly_rep_gain = 0.0
+        for h in helping_girls:
+            if h.archetype == "Artist":
+                hourly_rep_gain += 0.35 if h.is_co_owner else 0.20
+                sales_mult += 0.10 if h.is_co_owner else 0.06
+            elif h.archetype == "Scholar":
+                hourly_rep_gain += 0.20 if h.is_co_owner else 0.12
+                sales_mult += 0.16 if h.is_co_owner else 0.10
+            elif h.archetype == "Entrepreneur":
+                hourly_rep_gain += 0.12 if h.is_co_owner else 0.08
+                sales_mult += 0.24 if h.is_co_owner else 0.16
+
         # Capacity limits
         capacity = self.restaurant.customer_capacity
         multiplier = self.town.economic_multiplier
@@ -274,18 +282,18 @@ class GameState:
         # Servicing capacity in 1 hour
         player_capacity = 3
         employee_capacity = sum(int(2 + e.skill * 4) for e in active_employees)
-        partner_capacity = 4 if partner_helps_today else 0
+        partner_capacity = len(helping_girls) * 4
         total_capacity = player_capacity + employee_capacity + partner_capacity
         
         max_hourly_capacity = max(1, capacity // 8)
         actual_served = min(potential_customers, total_capacity, max_hourly_capacity)
         turned_away = max(0, potential_customers - total_capacity)
         
-        revenue = round(actual_served * self.restaurant.menu_price, 2)
+        revenue = round(actual_served * self.restaurant.menu_price * sales_mult, 2)
         
         # Tips
-        workers_count = 1 + len(active_employees) + (1 if partner_helps_today else 0)
-        skills_sum = 0.5 + sum(e.skill for e in active_employees) + (0.8 if partner_helps_today else 0.0)
+        workers_count = 1 + len(active_employees) + len(helping_girls)
+        skills_sum = 0.5 + sum(e.skill for e in active_employees) + (len(helping_girls) * 0.8)
         avg_skill = skills_sum / workers_count
         
         tip_rate = random.uniform(0.0, 1.5) * (self.restaurant.reputation / 100.0) * avg_skill
@@ -301,8 +309,9 @@ class GameState:
             self.finance.record_transaction("Revenue", tips, f"Hour {current_hour}: Tips received")
             
         # Rep adjustments
-        rep_change = 0.0
+        rep_change = hourly_rep_gain
         if actual_served > 0:
+            rep_change += 0.03 * actual_served * (avg_skill - 0.4)
             rep_change += 0.004 * actual_served * (avg_skill - 0.4)
             
             max_p = self.restaurant.price_per_meal_range[1]

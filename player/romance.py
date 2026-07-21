@@ -147,6 +147,29 @@ class RomanceSystem:
         """Returns characters hanging out at the bar on the current day."""
         return [c_item for c_item in self.characters if day_name in c_item.schedule]
 
+    def get_helping_characters(self, day_name: str) -> list[RomanticCharacter]:
+        """Returns partners/wives helping at the restaurant today.
+        - Married wives help every day.
+        - Dating partners help on their scheduled days.
+        """
+        helpers = []
+        for c in self.characters:
+            if c.is_co_owner:
+                helpers.append(c)
+            elif c.is_partner and day_name in c.schedule:
+                helpers.append(c)
+        return helpers
+
+    def get_present_characters_at_place(self, place_name: str, day_name: str) -> list[RomanticCharacter]:
+        """Returns characters present at a given location (Restaurant, Bar, Home) on day_name."""
+        if place_name == "Restaurant":
+            return self.get_helping_characters(day_name)
+        elif place_name in ["Bar", "Tavern"]:
+            return self.get_characters_available(day_name)
+        elif place_name == "Home":
+            return [c for c in self.characters if c.is_co_owner]
+        return []
+
     def trigger_cheating_scandal(self, state=None) -> str:
         """Triggers a polygamy scandal: all partners leave, house and furnishings are seized, and alimony is paid."""
         self.caught_cheating = True
@@ -190,7 +213,7 @@ class RomanceSystem:
             f"You are legally barred from future relationships!"
         )
 
-    def propose_relationship(self, name: str, day_name: str = None, state=None) -> tuple[bool, str]:
+    def propose_relationship(self, name: str, day_name: str = None, state=None, current_place: str = "Bar") -> tuple[bool, str]:
         """Player asks the character to be their partner."""
         if self.caught_cheating:
             return False, "You were caught cheating and are legally barred from proposing relationships under Oakhaven family court orders!"
@@ -207,7 +230,7 @@ class RomanceSystem:
 
         # Breakup / Scandal ONLY triggers if an existing partner is PRESENT in the same place at the same time today!
         if day_name:
-            present_girls = self.get_characters_available(day_name)
+            present_girls = self.get_present_characters_at_place(current_place, day_name)
             other_present_partners = [g for g in present_girls if g.name != name and (g.is_partner or g.is_co_owner)]
             if other_present_partners:
                 scandal_msg = self.trigger_cheating_scandal(state)
@@ -278,11 +301,11 @@ class RomanceSystem:
         p.is_partner = True
         return True, f"{p.name} gasps as you open the velvet box. 'Yes! A thousand times yes!' She moves into your house and joins the restaurant as your wife and Co-Owner!"
 
-    def apply_jealousy(self, active_girl_name: str, day_name: str, state=None) -> list[str]:
-        """Applies jealousy to other girls in the bar today. Returns notification messages."""
+    def apply_jealousy(self, active_girl_name: str, day_name: str, state=None, current_place: str = "Bar") -> list[str]:
+        """Applies jealousy to other girls in the place today. Returns notification messages."""
         notices = []
         active_girl = next((c for c in self.characters if c.name == active_girl_name), None)
-        present_girls = self.get_characters_available(day_name)
+        present_girls = self.get_present_characters_at_place(current_place, day_name)
         
         # If active girl is ALSO a partner/wife, and another partner/wife is present -> SCANDAL!
         if active_girl and (active_girl.is_partner or active_girl.is_co_owner):
@@ -305,7 +328,7 @@ class RomanceSystem:
                 g.romance_level = max(0.0, g.romance_level - loss)
                 
                 notices.append(
-                    f"💔 {g.name} ({g.archetype}) saw you flirting with {active_girl_name}! "
+                    f"💔 {g.name} ({g.archetype}) saw you flirting with {active_girl_name} at the {current_place}! "
                     f"Romance with {g.name} dropped by -{loss:.1f} ({old_val:.1f} -> {g.romance_level:.1f})"
                 )
         return notices

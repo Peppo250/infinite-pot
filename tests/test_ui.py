@@ -281,3 +281,30 @@ def test_cheating_scandal_same_place_same_time(main_window):
     assert state.house.purchased is False
     assert state.player.cash < 10000.0
     assert any("CHEATING SCANDAL" in n for n in notices)
+
+def test_partner_restaurant_helping_and_scandal(main_window):
+    state = main_window.state
+    rom = state.romance
+    
+    # 1. Partner helping at restaurant
+    g1 = rom.characters[0]
+    g1.is_partner = True
+    helpers = rom.get_helping_characters(g1.schedule[0])
+    assert len(helpers) >= 1
+    assert helpers[0].name == g1.name
+    
+    # 2. Married wife helps every day
+    g1.is_co_owner = True
+    helpers_married = rom.get_helping_characters("Sunday")
+    assert any(h.name == g1.name for h in helpers_married)
+    
+    # 3. Flirting with another partner at Restaurant when wife is helping -> SCANDAL!
+    g2 = rom.characters[1]
+    g2.is_partner = True
+    state.house.purchased = True
+    state.player.cash = 10000.0
+    
+    notices = rom.apply_jealousy(g2.name, "Sunday", state, current_place="Restaurant")
+    assert rom.caught_cheating is True
+    assert g1.is_co_owner is False
+    assert g2.is_partner is False

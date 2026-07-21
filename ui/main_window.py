@@ -863,7 +863,7 @@ class MainWindow(QMainWindow):
                 p.adjust_energy(-10)
                 msg, gain = girl.interact_talk()
                 girl.romance_level = min(100.0, girl.romance_level + gain)
-                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state)
+                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
                 for notice in notices:
                     self.add_log(notice)
                 UIAudio.play_dialogue()
@@ -878,14 +878,14 @@ class MainWindow(QMainWindow):
                 self.state.finance.record_transaction("Misc", 25.0, f"Bought drink for {girl.name}")
                 msg, gain = girl.interact_drink(25.0)
                 girl.romance_level = min(100.0, girl.romance_level + gain)
-                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state)
+                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
                 for notice in notices:
                     self.add_log(notice)
                 UIAudio.play_coin()
                 self.add_log(msg, speaker=girl.name)
                 ConfirmDialog("Bought Drink", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
             elif idx == 2 and "Ask out" in opts[idx]:
-                success, msg = rom.propose_relationship(girl.name, self.state.day_name, self.state)
+                success, msg = rom.propose_relationship(girl.name, self.state.day_name, self.state, self.current_place)
                 if success:
                     UIAudio.play_success()
                     ConfirmDialog("Relationship Started", msg, self).exec()
