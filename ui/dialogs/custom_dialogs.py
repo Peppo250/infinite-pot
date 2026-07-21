@@ -655,7 +655,8 @@ class RelationshipMgmtDialog(GameDialog):
     def __init__(self, state, parent=None):
         super().__init__("Relationship Management", parent)
         self.state = state
-        self.resize(500, 500)
+        self.resize(500, 520)
+        self.selected_partner_name = None
         
         self.info_lbl = QLabel(self)
         self.layout.addWidget(self.info_lbl)
@@ -684,23 +685,62 @@ class RelationshipMgmtDialog(GameDialog):
         
         self.update_ui()
         
+    def select_partner(self, name: str):
+        self.selected_partner_name = name
+        self.update_ui()
+        
     def update_ui(self):
         rom = self.state.romance
         p = self.state.player
         h = self.state.house
-        partner = rom.partner
         
-        if not partner:
+        partners = [c for c in rom.characters if c.is_partner or c.is_co_owner]
+        
+        if not partners:
             self.info_lbl.setText("You are currently single. Socialize at the Tavern first!")
             self.progress.setVisible(False)
             self.act_scroll.setVisible(False)
             return
             
+        if len(partners) > 1 and (not self.selected_partner_name or self.selected_partner_name not in [pt.name for pt in partners]):
+            self.info_lbl.setText("<b>You have multiple partners! Select a partner to spend time with:</b>")
+            self.progress.setVisible(False)
+            self.act_scroll.setVisible(True)
+            
+            while self.scroll_layout.count():
+                item = self.scroll_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+                    
+            for p_item in partners:
+                pf = QFrame(self.scroll_content)
+                pf.setStyleSheet("border: 1px solid #5B3923; padding: 6px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.6);")
+                pl = QVBoxLayout(pf)
+                
+                lbl = QLabel(f"<b>{p_item.name}</b> ({p_item.archetype})<br/>Romance: {p_item.romance_level:.0f}/100 | Stage: {'Co-Owner & Wife' if p_item.is_co_owner else 'Partner'}", self)
+                lbl.setStyleSheet("font-size: 12px; border: none; background: transparent;")
+                pl.addWidget(lbl)
+                
+                btn = QPushButton(f"Spend Time with {p_item.name}", self)
+                btn.clicked.connect(lambda chk=False, name=p_item.name: self.select_partner(name))
+                pl.addWidget(btn)
+                
+                self.scroll_layout.addWidget(pf)
+            return
+
+        if len(partners) == 1:
+            self.selected_partner_name = partners[0].name
+            
+        target_partner = next((c for c in partners if c.name == self.selected_partner_name), partners[0])
+        rom.active_partner_name = target_partner.name
+
         self.progress.setVisible(True)
-        self.progress.setValue(int(partner.romance_level))
+        self.progress.setValue(int(target_partner.romance_level))
         self.act_scroll.setVisible(True)
         
-        status_str = f"Partner: <b>{partner.name}</b> ({partner.archetype})<br/>Stage: <b>{rom.stage_name}</b>"
+        status_str = f"Partner: <b>{target_partner.name}</b> ({target_partner.archetype})<br/>Stage: <b>{'Co-Owner & Wife' if target_partner.is_co_owner else 'Partner'}</b>"
+        if len(partners) > 1:
+            status_str += " &nbsp; | &nbsp; <i>(Multiple Partners Active)</i>"
         self.info_lbl.setText(status_str)
         
         # Clear activities
@@ -708,6 +748,11 @@ class RelationshipMgmtDialog(GameDialog):
             item = self.scroll_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+                
+        if len(partners) > 1:
+            switch_btn = QPushButton("⬅ Switch Partner Selection", self)
+            switch_btn.clicked.connect(lambda: self.select_partner(None))
+            self.scroll_layout.addWidget(switch_btn)
                 
         # List of activities
         activities = [
@@ -731,16 +776,16 @@ class RelationshipMgmtDialog(GameDialog):
             
             btn = QPushButton(f"Run (+{act['rom_gain']:.0f})", self)
             btn.setStyleSheet("font-size: 11px; padding: 3px 6px;")
-            btn.clicked.connect(lambda chk=False, a=act: self.run_activity(a))
+            btn.clicked.connect(lambda chk=False, a=act, tp=target_partner: self.run_activity_for_partner(a, tp))
             btn.setEnabled(p.cash >= act["cost"] and p.energy >= act["energy"])
             al.addWidget(btn, stretch=1)
             self.scroll_layout.addWidget(af)
             
-        # Propose / Ring buttons section
+        # Propose / Ring / Breakup buttons section
         pf = QFrame(self.scroll_content)
         pf.setStyleSheet("border: 1px solid #E25E3E; padding: 5px; border-radius: 4px;")
         pl = QVBoxLayout(pf)
-        pl.addWidget(QLabel("<b>Relationship Proposals & Ring:</b>", self))
+        pl.addWidget(QLabel("<b>Relationship Actions & Proposals:</b>", self))
         
         if not rom.has_ring:
             btn_ring = QPushButton("💍 Buy Diamond Engagement Ring (-$2500.00)", self)
@@ -749,18 +794,18 @@ class RelationshipMgmtDialog(GameDialog):
             btn_ring.setEnabled(p.cash >= 2500.0)
             pl.addWidget(btn_ring)
         
-        if not partner.is_partner and not partner.is_co_owner:
-            btn_prop = QPushButton("Ask her to be your Partner (Need >=40 Romance)", self)
-            btn_prop.clicked.connect(lambda: self.on_propose_dating(partner.name))
-            btn_prop.setEnabled(partner.romance_level >= 40.0)
-            pl.addWidget(btn_prop)
-        elif partner.is_partner and not partner.is_co_owner:
-            btn_marry = QPushButton("Propose Marriage (Need >=75 Romance, Ring & House)", self)
+        if not target_partner.is_co_owner:
+            btn_marry = QPushButton(f"Propose Marriage to {target_partner.name} (Need >=75 Romance, Ring & House)", self)
             btn_marry.clicked.connect(self.on_propose_marriage)
-            btn_marry.setEnabled(rom.has_ring and h.purchased and partner.romance_level >= 75.0)
+            btn_marry.setEnabled(rom.has_ring and h.purchased and target_partner.romance_level >= 75.0)
             pl.addWidget(btn_marry)
         else:
-            pl.addWidget(QLabel("🌹 You are happily married!", self))
+            pl.addWidget(QLabel(f"🌹 You are happily married to {target_partner.name}!", self))
+            
+        btn_break = QPushButton(f"💔 Break Up with {target_partner.name}", self)
+        btn_break.setObjectName("quit-btn")
+        btn_break.clicked.connect(self.on_break_up_dlg)
+        pl.addWidget(btn_break)
             
         self.scroll_layout.addWidget(pf)
         
@@ -780,10 +825,9 @@ class RelationshipMgmtDialog(GameDialog):
             if p_win and hasattr(p_win, 'update_hud'):
                 p_win.update_hud()
 
-    def run_activity(self, act):
+    def run_activity_for_partner(self, act, partner):
         p = self.state.player
         rom = self.state.romance
-        partner = rom.partner
         
         if p.cash >= act["cost"] and p.energy >= act["energy"]:
             p.adjust_cash(-act["cost"])
@@ -836,6 +880,22 @@ class RelationshipMgmtDialog(GameDialog):
             p_win = p_win.parent()
         if p_win and hasattr(p_win, 'update_hud'):
             p_win.update_hud()
+
+    def on_break_up_dlg(self):
+        rom = self.state.romance
+        target_name = self.selected_partner_name or rom.partner_name
+        confirm = ConfirmDialog("Break Up", f"Are you sure you want to break up with {target_name}?", self)
+        if confirm.exec():
+            success, msg = rom.break_up(target_name)
+            UIAudio.play_notify()
+            ConfirmDialog("Relationship Ended", msg, self).exec()
+            self.selected_partner_name = None
+            self.update_ui()
+            p_win = self.parent()
+            while p_win and not hasattr(p_win, 'update_hud'):
+                p_win = p_win.parent()
+            if p_win and hasattr(p_win, 'update_hud'):
+                p_win.update_hud()
 
 class OptionsDialog(GameDialog):
     def __init__(self, parent=None):

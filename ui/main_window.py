@@ -729,7 +729,13 @@ class MainWindow(QMainWindow):
                 item.widget().deleteLater()
                 
         rom = self.state.romance
-        for girl in rom.characters:
+        avail_girls = rom.get_characters_available(self.state.day_name)
+        if not avail_girls:
+            lbl_empty = QLabel("<font color='#5B3923'><i>No girls visiting the tavern today.</i></font>", self)
+            lbl_empty.setStyleSheet("font-size: 11px; border: none; background: transparent;")
+            self.bar_girls_layout.addWidget(lbl_empty)
+            
+        for girl in avail_girls:
             f = QFrame(self.bar_girls_content)
             f.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QVBoxLayout(f)
@@ -850,7 +856,9 @@ class MainWindow(QMainWindow):
                 p.adjust_energy(-10)
                 msg, gain = girl.interact_talk()
                 girl.romance_level = min(100.0, girl.romance_level + gain)
-                rom.apply_jealousy(girl.name, self.state.day_name)
+                notices = rom.apply_jealousy(girl.name, self.state.day_name)
+                for notice in notices:
+                    self.add_log(notice)
                 UIAudio.play_dialogue()
                 self.add_log(msg, speaker=girl.name)
                 ConfirmDialog(f"Talk with {girl.name}", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
@@ -863,7 +871,9 @@ class MainWindow(QMainWindow):
                 self.state.finance.record_transaction("Misc", 25.0, f"Bought drink for {girl.name}")
                 msg, gain = girl.interact_drink(25.0)
                 girl.romance_level = min(100.0, girl.romance_level + gain)
-                rom.apply_jealousy(girl.name, self.state.day_name)
+                notices = rom.apply_jealousy(girl.name, self.state.day_name)
+                for notice in notices:
+                    self.add_log(notice)
                 UIAudio.play_coin()
                 self.add_log(msg, speaker=girl.name)
                 ConfirmDialog("Bought Drink", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()

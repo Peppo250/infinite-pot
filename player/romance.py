@@ -172,11 +172,15 @@ class RomanceSystem:
         self.active_partner_name = char.name
         return True, f"You ask {char.name} to be your partner, and she happily agrees! She is now your partner."
 
-    def break_up(self) -> tuple[bool, str]:
-        """Breaks up with the current active partner."""
-        p = self.partner
+    def break_up(self, target_name: str = None) -> tuple[bool, str]:
+        """Breaks up with a specified partner or current active partner."""
+        if target_name:
+            p = next((c for c in self.characters if c.name == target_name and (c.is_partner or c.is_co_owner)), None)
+        else:
+            p = self.partner
+            
         if not p:
-            return False, "You are not in a relationship."
+            return False, "You are not in a relationship with this person."
 
         old_name = p.name
         p.is_partner = False
@@ -187,8 +191,9 @@ class RomanceSystem:
         next_partner = next((c for c in self.characters if c.is_partner or c.is_co_owner), None)
         self.active_partner_name = next_partner.name if next_partner else None
         
-        self.has_ring = False
-        self.wedding_tier = "None"
+        if not next_partner:
+            self.has_ring = False
+            self.wedding_tier = "None"
         return True, f"You broke up with {old_name}."
 
     def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:

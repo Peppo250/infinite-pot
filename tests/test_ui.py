@@ -229,3 +229,24 @@ def test_random_event_handling(main_window, monkeypatch):
     monkeypatch.setattr(ChoicesDialog, "exec", fake_exec)
     main_window.handle_triggered_event(event)
     assert main_window.game_over is False
+
+def test_multiple_partners_selection_and_breakup(main_window):
+    rom = main_window.state.romance
+    g1 = rom.characters[0]
+    g2 = rom.characters[1]
+    
+    g1.is_partner = True
+    g2.is_partner = True
+    
+    dlg = RelationshipMgmtDialog(main_window.state, main_window)
+    # Since multiple partners exist, initially shows partner selection list
+    assert dlg.selected_partner_name is None
+    
+    # Select first partner
+    dlg.select_partner(g1.name)
+    assert dlg.selected_partner_name == g1.name
+    
+    # Break up with first partner via dialog
+    dlg.on_break_up_dlg()
+    assert g1.is_partner is False
+    assert g2.is_partner is True
