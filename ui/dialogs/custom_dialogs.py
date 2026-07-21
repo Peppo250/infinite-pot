@@ -852,7 +852,7 @@ class RelationshipMgmtDialog(GameDialog):
 
     def on_propose_dating(self, name):
         rom = self.state.romance
-        success, msg = rom.propose_relationship(name)
+        success, msg = rom.propose_relationship(name, self.state.day_name, self.state)
         if success:
             UIAudio.play_success()
             ConfirmDialog("Success", msg, self).exec()

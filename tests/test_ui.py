@@ -258,3 +258,26 @@ def test_dev_setup_dialog(main_window):
     dlg.cash_spin.setValue(15000.0)
     assert dlg.get_level() == 3
     assert dlg.get_cash() == 15000.0
+
+def test_cheating_scandal_same_place_same_time(main_window):
+    state = main_window.state
+    rom = state.romance
+    
+    g1 = next(c for c in rom.characters if c.archetype == "Scholar")
+    g2 = next(c for c in rom.characters if c.archetype == "Entrepreneur")
+    
+    g1.is_partner = True
+    g2.is_partner = True
+    state.house.purchased = True
+    state.player.cash = 10000.0
+    
+    # Interacting with g1 on Wednesday when g2 is ALSO present at the tavern
+    notices = rom.apply_jealousy(g1.name, "Wednesday", state)
+    
+    # Caught! Scandal triggered
+    assert rom.caught_cheating is True
+    assert g1.is_partner is False
+    assert g2.is_partner is False
+    assert state.house.purchased is False
+    assert state.player.cash < 10000.0
+    assert any("CHEATING SCANDAL" in n for n in notices)

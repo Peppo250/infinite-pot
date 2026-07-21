@@ -147,7 +147,50 @@ class RomanceSystem:
         """Returns characters hanging out at the bar on the current day."""
         return [c_item for c_item in self.characters if day_name in c_item.schedule]
 
-    def propose_relationship(self, name: str) -> tuple[bool, str]:
+    def trigger_cheating_scandal(self, state=None) -> str:
+        """Triggers a polygamy scandal: all partners leave, house and furnishings are seized, and alimony is paid."""
+        self.caught_cheating = True
+        ex_names = [c.name for c in self.characters if c.is_partner or c.is_co_owner]
+        if not ex_names:
+            ex_names = [c.name for c in self.characters if c.romance_level >= 40.0]
+            
+        # 1. All women leave
+        for c in self.characters:
+            c.is_partner = False
+            c.is_co_owner = False
+            c.romance_level = 0.0
+            
+        self.active_partner_name = None
+        self.has_ring = False
+        self.wedding_tier = "None"
+        
+        # 2. Seize house & all furnishings/properties
+        alimony_msg = ""
+        if state:
+            h = getattr(state, "house", None)
+            p = getattr(state, "player", None)
+            f = getattr(state, "finance", None)
+            
+            if h:
+                h.purchased = False
+                h.upgrades.clear()
+            if p:
+                p.has_house = False
+                alimony_total = max(1500.0, p.cash * 0.50)
+                p.adjust_cash(-alimony_total)
+                alimony_msg = f" Ordered ${alimony_total:.2f} in lump-sum alimony paid to your exes."
+                if f:
+                    f.record_transaction("Misc", -alimony_total, "Seized cash & lump-sum alimony paid to exes under court order")
+                    
+        names_str = " and ".join(ex_names) if ex_names else "Your partners"
+        return (
+            f"⚖️ CHEATING SCANDAL & PROPERTY SEIZURE!\n\n"
+            f"{names_str} discovered you were dating multiple partners simultaneously!\n"
+            f"All partners left you immediately, Oakhaven Family Court seized your cottage and home furnishings,{alimony_msg} "
+            f"You are legally barred from future relationships!"
+        )
+
+    def propose_relationship(self, name: str, day_name: str = None, state=None) -> tuple[bool, str]:
         """Player asks the character to be their partner."""
         if self.caught_cheating:
             return False, "You were caught cheating and are legally barred from proposing relationships under Oakhaven family court orders!"
@@ -161,6 +204,14 @@ class RomanceSystem:
 
         if char.romance_level < 40.0:
             return False, f"{char.name} likes you, but feels it is too early to commit. (Need 40.0 Romance, currently {char.romance_level:.1f})"
+
+        # Breakup / Scandal ONLY triggers if an existing partner is PRESENT in the same place at the same time today!
+        if day_name:
+            present_girls = self.get_characters_available(day_name)
+            other_present_partners = [g for g in present_girls if g.name != name and (g.is_partner or g.is_co_owner)]
+            if other_present_partners:
+                scandal_msg = self.trigger_cheating_scandal(state)
+                return False, scandal_msg
 
         # 50% chance of acceptance between 40.0 and 60.0
         if 40.0 <= char.romance_level < 60.0:
@@ -196,7 +247,7 @@ class RomanceSystem:
             self.wedding_tier = "None"
         return True, f"You broke up with {old_name}."
 
-    def ask_to_co_own(self, has_house: bool) -> tuple[bool, str]:
+    def ask_to_co_own(self, has_house: bool, state=None) -> tuple[bool, str]:
         """Player asks partner to move in and co-own the business."""
         if self.caught_cheating:
             return False, "You were caught cheating and are legally barred from proposing marriage under Oakhaven family court orders!"
@@ -227,23 +278,34 @@ class RomanceSystem:
         p.is_partner = True
         return True, f"{p.name} gasps as you open the velvet box. 'Yes! A thousand times yes!' She moves into your house and joins the restaurant as your wife and Co-Owner!"
 
-    def apply_jealousy(self, active_girl_name: str, day_name: str) -> list[str]:
+    def apply_jealousy(self, active_girl_name: str, day_name: str, state=None) -> list[str]:
         """Applies jealousy to other girls in the bar today. Returns notification messages."""
         notices = []
+        active_girl = next((c for c in self.characters if c.name == active_girl_name), None)
         present_girls = self.get_characters_available(day_name)
+        
+        # If active girl is ALSO a partner/wife, and another partner/wife is present -> SCANDAL!
+        if active_girl and (active_girl.is_partner or active_girl.is_co_owner):
+            other_present_partners = [g for g in present_girls if g.name != active_girl_name and (g.is_partner or g.is_co_owner)]
+            if other_present_partners:
+                scandal_msg = self.trigger_cheating_scandal(state)
+                notices.append(scandal_msg)
+                return notices
+
         for g in present_girls:
             if g.name == active_girl_name:
                 continue
-            if g.romance_level > 25.0:
-                # Jealousy factor increases as romance goes higher
-                mults = {"Artist": 1.0, "Scholar": 0.8, "Entrepreneur": 1.3}
-                loss = (3.0 + (g.romance_level - 25.0) * 0.12) * mults[g.archetype]
+            if g.is_partner or g.is_co_owner or g.romance_level > 20.0:
+                # Jealousy factor varies by personality characteristics
+                mults = {"Artist": 1.3, "Scholar": 0.8, "Entrepreneur": 1.6}
+                base_drop = 6.0 if (g.is_partner or g.is_co_owner) else 3.5
+                loss = (base_drop + (g.romance_level * 0.12)) * mults[g.archetype]
                 
                 old_val = g.romance_level
                 g.romance_level = max(0.0, g.romance_level - loss)
                 
                 notices.append(
-                    f"💔 {g.name} saw you interacting with {active_girl_name} and looked hurt! "
+                    f"💔 {g.name} ({g.archetype}) saw you flirting with {active_girl_name}! "
                     f"Romance with {g.name} dropped by -{loss:.1f} ({old_val:.1f} -> {g.romance_level:.1f})"
                 )
         return notices
