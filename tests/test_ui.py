@@ -308,3 +308,25 @@ def test_partner_restaurant_helping_and_scandal(main_window):
     assert rom.caught_cheating is True
     assert g1.is_co_owner is False
     assert g2.is_partner is False
+
+def test_wife_bar_presence_and_cheating_scandal(main_window):
+    state = main_window.state
+    rom = state.romance
+    
+    g1 = rom.characters[0] # Wife
+    g1.is_co_owner = True
+    
+    # Married wife is present at the Bar on Sunday (even if Sunday is not in her schedule)
+    bar_girls = rom.get_characters_available("Sunday")
+    assert any(g.name == g1.name for g in bar_girls)
+    
+    # Player dates another girl g2 at the Bar on Sunday -> SCANDAL!
+    g2 = rom.characters[1]
+    g2.is_partner = True
+    state.house.purchased = True
+    state.player.cash = 10000.0
+    
+    notices = rom.apply_jealousy(g2.name, "Sunday", state, current_place="Bar")
+    assert rom.caught_cheating is True
+    assert g1.is_co_owner is False
+    assert g2.is_partner is False

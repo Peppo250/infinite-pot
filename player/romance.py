@@ -144,8 +144,15 @@ class RomanceSystem:
         return p.is_co_owner if p else False
 
     def get_characters_available(self, day_name: str) -> list[RomanticCharacter]:
-        """Returns characters hanging out at the bar on the current day."""
-        return [c_item for c_item in self.characters if day_name in c_item.schedule]
+        """Returns characters hanging out at the bar on the current day.
+        - Married wives visit the bar every day to socialize.
+        - Dating and single girls visit on their scheduled days.
+        """
+        bar_girls = []
+        for c in self.characters:
+            if c.is_co_owner or day_name in c.schedule:
+                bar_girls.append(c)
+        return bar_girls
 
     def get_helping_characters(self, day_name: str) -> list[RomanticCharacter]:
         """Returns partners/wives helping at the restaurant today.
