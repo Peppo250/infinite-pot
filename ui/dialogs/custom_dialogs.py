@@ -247,7 +247,7 @@ class ReceiptDialog(GameDialog):
 
 class PlaceUpgradesDialog(GameDialog):
     def __init__(self, state, parent=None):
-        super().__init__("Place Upgrades & Modifications", parent)
+        super().__init__("Place Mgmt", parent)
         self.state = state
         self.resize(500, 520)
         
@@ -292,14 +292,15 @@ class PlaceUpgradesDialog(GameDialog):
         
         self.scroll = QScrollArea(self)
         self.scroll.setWidgetResizable(True)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setSpacing(4)
         self.scroll.setWidget(self.scroll_content)
         self.layout.addWidget(self.scroll)
         
         # Add Close button
-        close_btn = QPushButton("Close Upgrades", self)
+        close_btn = QPushButton("Close Place Mgmt", self)
         close_btn.clicked.connect(self.accept)
         self.layout.addWidget(close_btn)
         
@@ -392,14 +393,17 @@ class PlaceUpgradesDialog(GameDialog):
                 continue # Unlocked at higher levels
                 
             f = QFrame(self.scroll_content)
-            f.setStyleSheet("border: 1px solid #5B3923; padding: 4px;")
+            f.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             fl = QHBoxLayout(f)
-            fl.setContentsMargins(4,4,4,4)
+            fl.setContentsMargins(4, 3, 4, 3)
+            fl.setSpacing(4)
             
-            lbl = QLabel(f"<b>{item_data['name']}</b><br/><font size='11'>{item_data['description']}</font>", self)
+            lbl = QLabel(f"<b>{item_data['name']}</b><br/><font size='1'>{item_data['description']}</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             fl.addWidget(lbl, stretch=3)
             
-            btn = QPushButton(f"Buy\n-${item_data['cost']:.0f}", self)
+            btn = QPushButton(f"Buy (-${item_data['cost']:.0f})", self)
+            btn.setStyleSheet("font-size: 11px; padding: 3px 6px;")
             btn.clicked.connect(lambda chk=False, data=item_data: self.buy_upgrade(data))
             btn.setEnabled(p.cash >= item_data["cost"])
             fl.addWidget(btn, stretch=1)
@@ -494,18 +498,19 @@ class MoneyMgmtDialog(GameDialog):
         
         self.asset_scroll = QScrollArea(self)
         self.asset_scroll.setWidgetResizable(True)
+        self.asset_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setSpacing(4)
         self.asset_scroll.setWidget(self.scroll_content)
         self.layout.addWidget(self.asset_scroll)
         
         # Assets definitions
         self.assets_catalog = [
-            {"id": "spices", "name": "Rare Spices Chest", "buy_price": 120.0, "sell_price": 90.0, "desc": "Improves your dish margins and stores value."},
-            {"id": "candelabra", "name": "Silver Candelabra", "buy_price": 250.0, "sell_price": 180.0, "desc": "Adds a vintage gleam to your shop. Sellable in pinch."},
-            {"id": "barrel", "name": "Vintage Oak Barrel", "buy_price": 450.0, "sell_price": 340.0, "desc": "Highly sought-after aging oak wood. Holds cash value."},
-            {"id": "mirror", "name": "Gilded Wall Mirror", "buy_price": 800.0, "sell_price": 600.0, "desc": "A heavy golden mirror. A strong asset buffer."}
+            {"id": "spices", "name": "Rare Spices Chest", "buy_price": 120.0, "sell_price": 90.0, "desc": "Improves dish margins."},
+            {"id": "candelabra", "name": "Silver Candelabra", "buy_price": 250.0, "sell_price": 180.0, "desc": "Adds vintage gleam."},
+            {"id": "barrel", "name": "Vintage Oak Barrel", "buy_price": 450.0, "sell_price": 340.0, "desc": "Aging oak wood asset."},
+            {"id": "mirror", "name": "Gilded Wall Mirror", "buy_price": 800.0, "sell_price": 600.0, "desc": "Golden mirror buffer."}
         ]
         
         # Close button
@@ -542,20 +547,25 @@ class MoneyMgmtDialog(GameDialog):
         for asset in self.assets_catalog:
             own_count = self.state.player_assets.count(asset["id"])
             af = QFrame(self.scroll_content)
-            af.setStyleSheet("border: 1px solid #5B3923; padding: 4px;")
+            af.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             a_layout = QHBoxLayout(af)
-            a_layout.setContentsMargins(4,4,4,4)
+            a_layout.setContentsMargins(4, 3, 4, 3)
+            a_layout.setSpacing(4)
             
-            lbl = QLabel(f"<b>{asset['name']}</b> (Owned: {own_count})<br/><font size='11'>{asset['desc']}</font>", self)
+            lbl = QLabel(f"<b>{asset['name']}</b> (Owned: {own_count})<br/><font size='1'>{asset['desc']}</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             a_layout.addWidget(lbl, stretch=3)
             
             btn_box = QVBoxLayout()
-            buy_btn = QPushButton(f"Buy\n-${asset['buy_price']:.0f}", self)
+            btn_box.setSpacing(2)
+            buy_btn = QPushButton(f"Buy (-${asset['buy_price']:.0f})", self)
+            buy_btn.setStyleSheet("font-size: 11px; padding: 2px 4px;")
             buy_btn.clicked.connect(lambda chk=False, a=asset: self.buy_asset(a))
             buy_btn.setEnabled(p.cash >= asset["buy_price"])
             btn_box.addWidget(buy_btn)
             
-            sell_btn = QPushButton(f"Sell\n+${asset['sell_price']:.0f}", self)
+            sell_btn = QPushButton(f"Sell (+${asset['sell_price']:.0f})", self)
+            sell_btn.setStyleSheet("font-size: 11px; padding: 2px 4px;")
             sell_btn.clicked.connect(lambda chk=False, a=asset: self.sell_asset(a))
             sell_btn.setEnabled(own_count > 0)
             btn_box.addWidget(sell_btn)
@@ -645,7 +655,7 @@ class RelationshipMgmtDialog(GameDialog):
     def __init__(self, state, parent=None):
         super().__init__("Relationship Management", parent)
         self.state = state
-        self.resize(500, 480)
+        self.resize(500, 500)
         
         self.info_lbl = QLabel(self)
         self.layout.addWidget(self.info_lbl)
@@ -660,9 +670,10 @@ class RelationshipMgmtDialog(GameDialog):
         
         self.act_scroll = QScrollArea(self)
         self.act_scroll.setWidgetResizable(True)
+        self.act_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_content = QWidget()
         self.scroll_layout = QVBoxLayout(self.scroll_content)
-        self.scroll_layout.setSpacing(5)
+        self.scroll_layout.setSpacing(4)
         self.act_scroll.setWidget(self.scroll_content)
         self.layout.addWidget(self.act_scroll)
         
@@ -700,33 +711,43 @@ class RelationshipMgmtDialog(GameDialog):
                 
         # List of activities
         activities = [
-            {"id": "date", "name": "Go on Standard Date", "cost": 80.0, "energy": 25.0, "rom_gain": 12.0, "desc": "Stroll through the town park."},
-            {"id": "flowers", "name": "Gift Flowers", "cost": 35.0, "energy": 0.0, "rom_gain": 6.0, "desc": "A fresh bouquet of wild roses."},
-            {"id": "choc", "name": "Gift Chocolates", "cost": 60.0, "energy": 0.0, "rom_gain": 10.0, "desc": "Imported sweet dark pralines."},
-            {"id": "dinner", "name": "Fine Dining", "cost": 150.0, "energy": 15.0, "rom_gain": 22.0, "desc": "A candlelit dinner at the grand hotel."},
-            {"id": "poetry", "name": "Recite Love Poetry", "cost": 0.0, "energy": 10.0, "rom_gain": 5.0, "desc": "Write custom couplets (costs energy)."}
+            {"id": "date", "name": "Go on Standard Date", "cost": 80.0, "energy": 25.0, "rom_gain": 12.0, "desc": "Stroll town park."},
+            {"id": "flowers", "name": "Gift Flowers", "cost": 35.0, "energy": 0.0, "rom_gain": 6.0, "desc": "Fresh wild roses bouquet."},
+            {"id": "choc", "name": "Gift Chocolates", "cost": 60.0, "energy": 0.0, "rom_gain": 10.0, "desc": "Sweet dark pralines."},
+            {"id": "dinner", "name": "Fine Dining", "cost": 150.0, "energy": 15.0, "rom_gain": 22.0, "desc": "Candlelit hotel dinner."},
+            {"id": "poetry", "name": "Recite Love Poetry", "cost": 0.0, "energy": 10.0, "rom_gain": 5.0, "desc": "Write custom couplets."}
         ]
         
         for act in activities:
             af = QFrame(self.scroll_content)
-            af.setStyleSheet("border: 1px solid #5B3923; padding: 4px;")
+            af.setStyleSheet("border: 1px solid #5B3923; padding: 2px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.4);")
             al = QHBoxLayout(af)
-            al.setContentsMargins(4,4,4,4)
+            al.setContentsMargins(4, 3, 4, 3)
+            al.setSpacing(4)
             
-            lbl = QLabel(f"<b>{act['name']}</b><br/><font size='11'>{act['desc']} (Needs ${act['cost']:.0f}, {act['energy']:.0f} Energy)</font>", self)
+            lbl = QLabel(f"<b>{act['name']}</b><br/><font size='1'>{act['desc']} (${act['cost']:.0f}, {act['energy']:.0f} E)</font>", self)
+            lbl.setStyleSheet("font-size: 11px; border: none; background: transparent;")
             al.addWidget(lbl, stretch=3)
             
-            btn = QPushButton(f"Run\n+{act['rom_gain']:.0f} Rom", self)
+            btn = QPushButton(f"Run (+{act['rom_gain']:.0f})", self)
+            btn.setStyleSheet("font-size: 11px; padding: 3px 6px;")
             btn.clicked.connect(lambda chk=False, a=act: self.run_activity(a))
             btn.setEnabled(p.cash >= act["cost"] and p.energy >= act["energy"])
             al.addWidget(btn, stretch=1)
             self.scroll_layout.addWidget(af)
             
-        # Propose buttons
+        # Propose / Ring buttons section
         pf = QFrame(self.scroll_content)
-        pf.setStyleSheet("border: 1px solid #E25E3E; padding: 5px;")
+        pf.setStyleSheet("border: 1px solid #E25E3E; padding: 5px; border-radius: 4px;")
         pl = QVBoxLayout(pf)
-        pl.addWidget(QLabel("<b>Relationship Proposals:</b>", self))
+        pl.addWidget(QLabel("<b>Relationship Proposals & Ring:</b>", self))
+        
+        if not rom.has_ring:
+            btn_ring = QPushButton("💍 Buy Diamond Engagement Ring (-$2500.00)", self)
+            btn_ring.setStyleSheet("font-size: 12px; padding: 4px;")
+            btn_ring.clicked.connect(self.on_buy_ring_dlg)
+            btn_ring.setEnabled(p.cash >= 2500.0)
+            pl.addWidget(btn_ring)
         
         if not partner.is_partner and not partner.is_co_owner:
             btn_prop = QPushButton("Ask her to be your Partner (Need >=40 Romance)", self)
@@ -743,47 +764,72 @@ class RelationshipMgmtDialog(GameDialog):
             
         self.scroll_layout.addWidget(pf)
         
+    def on_buy_ring_dlg(self):
+        p = self.state.player
+        rom = self.state.romance
+        if p.cash >= 2500.0:
+            p.adjust_cash(-2500.0)
+            rom.has_ring = True
+            self.state.finance.record_transaction("Ring", 2500.0, "Purchased Diamond Engagement Ring")
+            UIAudio.play_coin()
+            ConfirmDialog("Diamond Ring", "Purchased a Diamond Engagement Ring for $2500.00!", self).exec()
+            self.update_ui()
+            p_win = self.parent()
+            while p_win and not hasattr(p_win, 'update_hud'):
+                p_win = p_win.parent()
+            if p_win and hasattr(p_win, 'update_hud'):
+                p_win.update_hud()
+
     def run_activity(self, act):
         p = self.state.player
         rom = self.state.romance
         partner = rom.partner
         
-        p.adjust_cash(-act["cost"])
-        p.adjust_energy(-act["energy"])
-        partner.romance_level = min(100.0, partner.romance_level + act["rom_gain"])
-        self.state.finance.record_transaction("Date", act["cost"], f"Romance activity: {act['name']}")
-        
-        UIAudio.play_success()
-        ConfirmDialog("Activity Success", f"You chose: {act['name']}.\n\nRomance increased by +{act['rom_gain']:.1f}!", self).exec()
-        self.update_ui()
-        p_win = self.parent()
-        while p_win and not hasattr(p_win, 'update_hud'):
-            p_win = p_win.parent()
-        if p_win and hasattr(p_win, 'update_hud'):
-            p_win.update_hud()
-        
+        if p.cash >= act["cost"] and p.energy >= act["energy"]:
+            p.adjust_cash(-act["cost"])
+            p.adjust_energy(-act["energy"])
+            mult = 1.0 + self.state.house.get_romance_progress_bonus()
+            gain = act["rom_gain"] * mult
+            partner.romance_level = min(100.0, partner.romance_level + gain)
+            
+            if act["cost"] > 0:
+                self.state.finance.record_transaction("Date", act["cost"], f"Activity with {partner.name}: {act['name']}")
+                UIAudio.play_coin()
+            else:
+                UIAudio.play_dialogue()
+                
+            ConfirmDialog("Activity Success", f"Completed '{act['name']}' with {partner.name}!\nGain: +{gain:.1f} Romance", self).exec()
+            self.update_ui()
+            p_win = self.parent()
+            while p_win and not hasattr(p_win, 'update_hud'):
+                p_win = p_win.parent()
+            if p_win and hasattr(p_win, 'update_hud'):
+                p_win.update_hud()
+
     def on_propose_dating(self, name):
-        success, msg = self.state.romance.propose_relationship(name)
+        rom = self.state.romance
+        success, msg = rom.propose_relationship(name)
         if success:
             UIAudio.play_success()
-            ConfirmDialog("Success!", msg, self).exec()
+            ConfirmDialog("Success", msg, self).exec()
         else:
-            ConfirmDialog("Rejection", msg, self).exec()
+            ConfirmDialog("Declined", msg, self).exec()
         self.update_ui()
         p_win = self.parent()
         while p_win and not hasattr(p_win, 'update_hud'):
             p_win = p_win.parent()
         if p_win and hasattr(p_win, 'update_hud'):
             p_win.update_hud()
-        
+
     def on_propose_marriage(self):
+        rom = self.state.romance
         h = self.state.house
-        success, msg = self.state.romance.ask_to_co_own(h.purchased)
+        success, msg = rom.ask_to_co_own(h.purchased)
         if success:
             UIAudio.play_success()
-            ConfirmDialog("Success!", msg, self).exec()
+            ConfirmDialog("Proposal Accepted!", msg, self).exec()
         else:
-            ConfirmDialog("Rejection", msg, self).exec()
+            ConfirmDialog("Proposal Declined", msg, self).exec()
         self.update_ui()
         p_win = self.parent()
         while p_win and not hasattr(p_win, 'update_hud'):
@@ -796,16 +842,23 @@ class OptionsDialog(GameDialog):
         super().__init__("Settings Options", parent)
         self.resize(400, 380)
         
+        p_win_speed = self.parent()
+        while p_win_speed and not hasattr(p_win_speed, 'world_speed'):
+            p_win_speed = p_win_speed.parent()
+        current_speed = getattr(p_win_speed, "world_speed", 1.0) if p_win_speed else 1.0
+        
         # 1. Resolutions
         self.layout.addWidget(QLabel("<b>Resolution:</b>", self))
         self.res_combo = QComboBox(self)
         self.res_combo.addItems(["1000 x 700", "1280 x 900", "800 x 600"])
+        self.res_combo.currentIndexChanged.connect(self.apply_settings_immediately)
         self.layout.addWidget(self.res_combo)
         
         # 2. Window Mode
         self.layout.addWidget(QLabel("<b>Window Mode:</b>", self))
         self.mode_combo = QComboBox(self)
         self.mode_combo.addItems(["Windowed", "Fullscreen"])
+        self.mode_combo.currentIndexChanged.connect(self.apply_settings_immediately)
         self.layout.addWidget(self.mode_combo)
         
         # 3. Audio settings
@@ -813,20 +866,17 @@ class OptionsDialog(GameDialog):
         self.music_slider = QSlider(Qt.Horizontal, self)
         self.music_slider.setRange(0, 100)
         self.music_slider.setValue(80)
+        self.music_slider.valueChanged.connect(self.apply_settings_immediately)
         self.layout.addWidget(self.music_slider)
         
         self.layout.addWidget(QLabel("<b>Sound Effects Volume:</b>", self))
         self.sfx_slider = QSlider(Qt.Horizontal, self)
         self.sfx_slider.setRange(0, 100)
         self.sfx_slider.setValue(90)
+        self.sfx_slider.valueChanged.connect(self.apply_settings_immediately)
         self.layout.addWidget(self.sfx_slider)
         
         # 3.5. World Speed Settings
-        p_win_speed = self.parent()
-        while p_win_speed and not hasattr(p_win_speed, 'world_speed'):
-            p_win_speed = p_win_speed.parent()
-        current_speed = getattr(p_win_speed, "world_speed", 1.0) if p_win_speed else 1.0
-        
         self.speed_widget = QWidget(self)
         speed_lay = QHBoxLayout(self.speed_widget)
         speed_lay.setContentsMargins(0, 0, 0, 0)
@@ -846,43 +896,42 @@ class OptionsDialog(GameDialog):
         quit_btn.clicked.connect(self.on_quit)
         self.layout.addWidget(quit_btn)
         
-        # 5. Apply & Close
-        apply_btn = QPushButton("Save Settings", self)
-        apply_btn.clicked.connect(self.on_apply)
-        self.layout.addWidget(apply_btn)
-        
         close_btn = QPushButton("Close Options", self)
         close_btn.clicked.connect(self.accept)
         self.layout.addWidget(close_btn)
         
     def on_speed_changed(self, val):
         self.speed_lbl.setText(f"<b>World Speed: {val}x</b>")
+        self.apply_settings_immediately()
         
-    def on_apply(self):
-        UIAudio.play_success()
-        # Apply resolution
-        res_str = self.res_combo.currentText()
-        w, h = map(int, res_str.replace(" ", "").split("x"))
+    def apply_settings_immediately(self):
+        from engine.audio import audio_manager
+        m_vol = self.music_slider.value() / 100.0
+        s_vol = self.sfx_slider.value() / 100.0
+        audio_manager.set_music_volume(m_vol)
+        audio_manager.set_sfx_volume(s_vol)
         
-        # Safely locate MainWindow parent
         p_win = self.parent()
         while p_win and not p_win.isWindow():
             p_win = p_win.parent()
             
         if p_win:
+            res_str = self.res_combo.currentText()
+            w, h = map(int, res_str.replace(" ", "").split("x"))
             p_win.resize(w, h)
-            # Apply fullscreen
+            
             if self.mode_combo.currentText() == "Fullscreen":
                 p_win.showFullScreen()
             else:
                 p_win.showNormal()
                 
-            # Apply world speed
             p_win.world_speed = float(self.speed_slider.value())
             if hasattr(p_win, 'day_clock_timer') and p_win.day_clock_timer.isActive():
                 interval_ms = int(10000 / p_win.world_speed)
                 p_win.day_clock_timer.start(interval_ms)
-            
+        
+    def on_apply(self):
+        UIAudio.play_success()
         ConfirmDialog("Settings Saved", "Graphics, audio, and speed settings applied successfully!", self).exec()
         self.accept()
         

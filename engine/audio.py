@@ -109,9 +109,21 @@ class AudioManager:
             
         try:
             sound = pygame.mixer.Sound(sfx_path)
+            sound.set_volume(getattr(self, 'sfx_volume', 1.0))
             sound.play()
         except Exception:
             pass
+
+    def set_music_volume(self, volume: float):
+        if not self.enabled:
+            return
+        try:
+            pygame.mixer.music.set_volume(volume)
+        except Exception:
+            pass
+
+    def set_sfx_volume(self, volume: float):
+        self.sfx_volume = volume
 
 # Global convenience instance
 audio_manager = AudioManager()

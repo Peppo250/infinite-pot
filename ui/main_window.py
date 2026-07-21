@@ -1,6 +1,7 @@
 # ui/main_window.py
 import sys
-from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect, QPushButton, QScrollArea
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QProgressBar, QFrame, QGraphicsOpacityEffect, QPushButton, QScrollArea, QTextEdit
+from PySide6.QtGui import QTextCursor
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
@@ -58,9 +59,45 @@ class MainWindow(QMainWindow):
         self.content_layout.setContentsMargins(0, 0, 0, 0)
         self.content_layout.setSpacing(0)
         
+        # Left Area Container (Viewport + Bottom Activity Log)
+        self.left_area_widget = QWidget(self)
+        left_layout = QVBoxLayout(self.left_area_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        left_layout.setSpacing(0)
+        
         # 2. Stacked Screen Layout
         self.stacked_widget = QStackedWidget(self)
-        self.content_layout.addWidget(self.stacked_widget, stretch=4)
+        left_layout.addWidget(self.stacked_widget, stretch=1)
+        
+        # Bottom Place Activity & Dialogue Log Box
+        self.place_log_frame = QFrame(self)
+        self.place_log_frame.setObjectName("place-log-frame")
+        self.place_log_frame.setFixedHeight(120)
+        self.place_log_frame.setStyleSheet(f"""
+            QFrame#place-log-frame {{
+                background-color: rgba(245, 235, 224, 0.94);
+                border-top: 3px solid {ThemeManager.DARK_BROWN};
+                padding: 4px 8px;
+            }}
+        """)
+        place_log_layout = QVBoxLayout(self.place_log_frame)
+        place_log_layout.setContentsMargins(6, 4, 6, 4)
+        place_log_layout.setSpacing(2)
+        
+        self.log_hdr_lbl = QLabel("<b>📜 Place Activity & Dialogue Log</b>", self)
+        self.log_hdr_lbl.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        place_log_layout.addWidget(self.log_hdr_lbl)
+        
+        self.log_text_edit = QTextEdit(self)
+        self.log_text_edit.setReadOnly(True)
+        self.log_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.log_text_edit.setStyleSheet(f"background: transparent; border: none; font-size: 13px; font-family: VT323, monospace; color: {ThemeManager.DARK_BROWN};")
+        place_log_layout.addWidget(self.log_text_edit)
+        
+        left_layout.addWidget(self.place_log_frame)
+        self.place_log_frame.setVisible(False)
+        
+        self.content_layout.addWidget(self.left_area_widget, stretch=3)
         
         # 3. Sidebar Widget
         self.sidebar_widget = self.init_sidebar_widget()
@@ -215,11 +252,13 @@ class MainWindow(QMainWindow):
         UIAudio.play_music("home")
         self.hud_bar.setVisible(False)
         self.sidebar_widget.setVisible(False)
+        self.place_log_frame.setVisible(False)
         self.animate_switch(0)
 
     def show_gameplay(self):
         self.hud_bar.setVisible(True)
         self.sidebar_widget.setVisible(True)
+        self.place_log_frame.setVisible(True)
         self.update_place_screen()
         self.update_hud()
 
@@ -238,6 +277,7 @@ class MainWindow(QMainWindow):
         UIAudio.play_music("home")
         self.hud_bar.setVisible(False)
         self.sidebar_widget.setVisible(False)
+        self.place_log_frame.setVisible(False)
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
@@ -315,8 +355,8 @@ class MainWindow(QMainWindow):
     def init_sidebar_widget(self):
         self.sidebar_widget = QFrame(self)
         self.sidebar_widget.setObjectName("sidebar-frame")
-        self.sidebar_widget.setMinimumWidth(280)
-        self.sidebar_widget.setMaximumWidth(340)
+        self.sidebar_widget.setMinimumWidth(320)
+        self.sidebar_widget.setMaximumWidth(400)
         self.sidebar_widget.setStyleSheet(f"""
             QFrame#sidebar-frame {{
                 background-color: {ThemeManager.CREAM};
@@ -325,11 +365,11 @@ class MainWindow(QMainWindow):
             }}
             QPushButton {{
                 font-family: VT323, monospace;
-                font-size: 14px;
+                font-size: 16px;
                 background-color: {ThemeManager.CREAM};
                 border: 1.5px solid {ThemeManager.DARK_BROWN};
-                padding: 5px 8px;
-                border-radius: 4px;
+                padding: 6px 10px;
+                border-radius: 5px;
             }}
             QPushButton:hover {{
                 background-color: #E25E3E;
@@ -360,7 +400,7 @@ class MainWindow(QMainWindow):
         
         self.sidebar_status_lbl = QLabel(self)
         self.sidebar_status_lbl.setWordWrap(True)
-        self.sidebar_status_lbl.setStyleSheet(f"font-size: 12px; line-height: 1.35; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
+        self.sidebar_status_lbl.setStyleSheet(f"font-size: 13px; line-height: 1.3; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
         rest_lay.addWidget(self.sidebar_status_lbl)
         
         self.stop_btn = QPushButton("Stop Work", self)
@@ -370,7 +410,7 @@ class MainWindow(QMainWindow):
         self.stop_btn.setVisible(False)
         rest_lay.addWidget(self.stop_btn)
         
-        self.upgrades_btn = QPushButton("Place Upgrades", self)
+        self.upgrades_btn = QPushButton("Place Mgmt", self)
         self.upgrades_btn.clicked.connect(self.open_place_upgrades)
         rest_lay.addWidget(self.upgrades_btn)
         
@@ -394,7 +434,7 @@ class MainWindow(QMainWindow):
         bar_lay.setSpacing(4)
         
         soc_hdr = QLabel("<b>🌹 Socialize</b>", self)
-        soc_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        soc_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(soc_hdr)
         
         self.bar_girls_scroll = QScrollArea(self)
@@ -408,7 +448,7 @@ class MainWindow(QMainWindow):
         bar_lay.addWidget(self.bar_girls_scroll)
         
         app_hdr = QLabel("<b>👥 Job Applicants</b>", self)
-        app_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        app_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(app_hdr)
         
         self.bar_cand_scroll = QScrollArea(self)
@@ -433,12 +473,12 @@ class MainWindow(QMainWindow):
         home_lay.setSpacing(4)
         
         rom_hdr = QLabel("<b>🌹 Dating & Romance</b>", self)
-        rom_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        rom_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(rom_hdr)
         
         self.home_rom_lbl = QLabel(self)
         self.home_rom_lbl.setWordWrap(True)
-        self.home_rom_lbl.setStyleSheet("font-size: 11px; font-weight: bold;")
+        self.home_rom_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
         home_lay.addWidget(self.home_rom_lbl)
         
         self.home_rom_progress = QProgressBar(self)
@@ -464,7 +504,7 @@ class MainWindow(QMainWindow):
         home_lay.addWidget(self.home_break_btn)
         
         furn_hdr = QLabel("<b>🏡 Home Furnishings</b>", self)
-        furn_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        furn_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(furn_hdr)
         
         self.home_upgrades_scroll = QScrollArea(self)
@@ -497,17 +537,17 @@ class MainWindow(QMainWindow):
         nav_layout.setSpacing(4)
         
         self.left_nav_btn = QPushButton("<", self)
-        self.left_nav_btn.setMaximumWidth(30)
+        self.left_nav_btn.setMaximumWidth(35)
         self.left_nav_btn.clicked.connect(self.on_nav_left)
         nav_layout.addWidget(self.left_nav_btn)
         
         self.place_label = QLabel("Restaurant", self)
         self.place_label.setAlignment(Qt.AlignCenter)
-        self.place_label.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.place_label.setStyleSheet(f"font-size: 15px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         nav_layout.addWidget(self.place_label)
         
         self.right_nav_btn = QPushButton(">", self)
-        self.right_nav_btn.setMaximumWidth(30)
+        self.right_nav_btn.setMaximumWidth(35)
         self.right_nav_btn.clicked.connect(self.on_nav_right)
         nav_layout.addWidget(self.right_nav_btn)
         
@@ -515,6 +555,15 @@ class MainWindow(QMainWindow):
         
         self.sidebar_widget.setVisible(False)
         return self.sidebar_widget
+
+    def add_log(self, text: str, speaker: str = None):
+        """Append entry to place activity log box and scroll to bottom."""
+        if speaker:
+            entry = f"<b><font color='#E25E3E'>{speaker}:</font></b> \"{text}\""
+        else:
+            entry = f"<font color='#5B3923'>• {text}</font>"
+        self.log_text_edit.append(entry)
+        self.log_text_edit.moveCursor(QTextCursor.End)
 
     def on_sim_btn_clicked(self):
         UIAudio.play_click()
@@ -803,6 +852,7 @@ class MainWindow(QMainWindow):
                 girl.romance_level = min(100.0, girl.romance_level + gain)
                 rom.apply_jealousy(girl.name, self.state.day_name)
                 UIAudio.play_dialogue()
+                self.add_log(msg, speaker=girl.name)
                 ConfirmDialog(f"Talk with {girl.name}", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
             elif idx == 1:
                 if p.cash < 25.0 or p.energy < 10:
@@ -815,6 +865,7 @@ class MainWindow(QMainWindow):
                 girl.romance_level = min(100.0, girl.romance_level + gain)
                 rom.apply_jealousy(girl.name, self.state.day_name)
                 UIAudio.play_coin()
+                self.add_log(msg, speaker=girl.name)
                 ConfirmDialog("Bought Drink", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
             elif idx == 2 and "Ask out" in opts[idx]:
                 success, msg = rom.propose_relationship(girl.name)

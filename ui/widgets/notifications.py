@@ -82,19 +82,7 @@ class NotificationManager(QWidget):
             self.setGeometry(20, 70, width, height)
 
     def add_notification(self, message: str, alert_type: str = "info"):
-        """Spawn a notification toast."""
-        toast = NotificationWidget(message, alert_type, self)
-        self.layout.addWidget(toast)
-        
-        # Animate entry (slide or pop)
-        # Note: Qt layout will auto-arrange, but we can play a simple scale/opacity transition
-        opacity_effect = toast.opacity_effect
-        anim = QPropertyAnimation(opacity_effect, b"opacity")
-        anim.setDuration(250)
-        anim.setStartValue(0.0)
-        anim.setEndValue(1.0)
-        anim.setEasingCurve(QEasingCurve.OutBack)
-        anim.start()
-        
-        # Prevent animation garbage collection
-        toast.entry_anim = anim
+        """Log notification into the place activity log box."""
+        p_win = self.window()
+        if hasattr(p_win, 'add_log'):
+            p_win.add_log(message)
