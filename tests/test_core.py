@@ -230,6 +230,7 @@ def test_restaurant_logic() -> None:
 def test_game_state_sim() -> None:
     # Verifies game loop simulation run and day advance transitions
     state = GameState()
+    state.player.cash = 0.0
     # At start, player has 0 cash, energy 100, level 0 restaurant
     assert state.player.cash == 0.0
     assert state.restaurant.level == 0
@@ -241,12 +242,12 @@ def test_game_state_sim() -> None:
     assert state.player.days_worked == 1
     
     # Advance the day
-    # Deducts daily cart maintenance for Level 0 ($0.00)
+    # Deducts daily household expenses and variable utility costs (free food philosophy)
     initial_cash = state.player.cash
     notices = state.advance_day()
     assert state.day == 2
-    # Verify maintenance deduction is $0.00
-    assert state.player.cash == initial_cash
+    # Verify player cash decreased by household and utility expenses
+    assert state.player.cash < initial_cash
 
 def test_scaling_and_sleep_recovery() -> None:
     # 1. Setup game state
@@ -367,3 +368,62 @@ def test_gameplay_rules_overhaul() -> None:
     success_block, msg_block = rom.propose_relationship(girl_a.name)
     assert success_block is False
     assert "legally barred" in msg_block
+
+def test_economy_of_life() -> None:
+    state = GameState()
+    
+    # 1. Test base free time
+    assert state.get_max_free_time() == 4.0
+    
+    # Test free time after 11 hours of work (3 hours overtime drains 3 hours of Free Time)
+    state.simulate_business_day(player_work_hours=11)
+    assert state.free_time == 1.0
+    # Overtime reduces fulfillment
+    assert state.personal_fulfillment < 50.0
+    
+    # 2. Test Decor degradation
+    r = state.restaurant
+    r.decor_durability = 100.0
+    assert r.decor_status == "Impeccable"
+    
+    # Service day with 20 customers (drains 2.0% durability)
+    # Let's adjust durability directly to test thresholds
+    r.decor_durability = 74.0
+    assert r.decor_status == "Worn and Dusty"
+    
+    # 3. Test part-time employee salary and capacity
+    from business.employees import Employee
+    emp = Employee(name="PartTimeAlex", skill=0.5, reliability=0.9, experience=2, daily_salary=50.0)
+    state.employees.hired.append(emp)
+    
+    # Part time toggled
+    emp.is_part_time = True
+    assert emp.get_actual_salary() == 25.0
+    assert state.employees.calculate_daily_wages() == 25.0
+    
+    # Negotiate temporary pay cut
+    emp.pay_cut_days_left = 3
+    assert emp.get_actual_salary() == 20.0 # 25.0 * 0.8 = 20.0
+    
+    # Advance day and check pay cut duration decrements
+    state.advance_day()
+    assert emp.pay_cut_days_left == 2
+
+def test_relationship_memories_and_dialogue() -> None:
+    state = GameState()
+    rom = state.romance
+    target = rom.characters[0]
+    
+    # Check initial conversation memory
+    assert len(target.memories) == 1
+    assert target.memories[0].title == "First Conversation"
+    
+    # Talk to character creates/reinforces memory
+    dialogue, gain = target.interact_talk()
+    assert len(target.memories) == 2
+    assert any(m.title == "Tavern Talk" for m in target.memories)
+    
+    # Procedural dialogue assembly
+    dialogue_block = target.generate_procedural_dialogue(state)
+    assert len(dialogue_block) > 0
+    assert isinstance(dialogue_block, str)

@@ -10,6 +10,8 @@ class BusinessUpgrade:
     daily_maintenance: float
     min_level: int
     description: str
+    extra_spend_bonus: float = 0.0
+    time_saved_bonus: float = 0.0
 
 @dataclass
 class RestaurantLevelConfig:
@@ -33,6 +35,18 @@ class Restaurant:
     meals_served_today: int = 0
     revenue_today: float = 0.0
     custom_name: str = ""
+    decor_durability: float = 100.0
+
+    @property
+    def decor_status(self) -> str:
+        if self.decor_durability >= 100.0:
+            return "Impeccable"
+        elif self.decor_durability >= 75.0:
+            return "Slightly Worn"
+        elif self.decor_durability >= 50.0:
+            return "Worn and Dusty"
+        else:
+            return "Severely Faded"
 
     @property
     def name(self) -> str:
@@ -65,7 +79,9 @@ class Restaurant:
                 attraction_bonus=u["attraction_bonus"],
                 daily_maintenance=u["daily_maintenance"],
                 min_level=u["min_level"],
-                description=u["description"]
+                description=u["description"],
+                extra_spend_bonus=u.get("extra_spend_bonus", 0.0),
+                time_saved_bonus=u.get("time_saved_bonus", 0.0)
             )
             for u in upgrades_cfg
         ]
@@ -161,13 +177,23 @@ class Restaurant:
         if self.menu_price > max_p:
             overprice = self.menu_price - max_p
             # Significant penalty for overpricing
-            price_impact = -0.15 * overprice
+            price_impact = -0.25 * overprice
         elif self.menu_price < min_p:
             underprice = min_p - self.menu_price
-            # Minor boost for cheap meals
-            price_impact = 0.05 * underprice
+            # Penalty for underpricing (customers question quality)
+            price_impact = -0.15 * underprice
 
-        total_attraction = cfg.base_attraction + upgrades_bonus + reputation_bonus + price_impact - competitor_impact
+        # Decor impact
+        decor_impact = 0.0
+        status = self.decor_status
+        if status == "Impeccable":
+            decor_impact = 0.05
+        elif status == "Worn and Dusty":
+            decor_impact = -0.10
+        elif status == "Severely Faded":
+            decor_impact = -0.25
+
+        total_attraction = cfg.base_attraction + upgrades_bonus + reputation_bonus + price_impact + decor_impact - competitor_impact
         # Cap attraction between 0.05 (5% minimum) and 1.0 (100% maximum)
         return max(0.05, min(1.0, total_attraction))
 

@@ -7,6 +7,7 @@ class GameplayScreen(QWidget):
     def __init__(self, state, parent=None):
         super().__init__(parent)
         self.state = state
+        self.evening_mode = False
         
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(15, 15, 15, 15)
@@ -32,17 +33,19 @@ class GameplayScreen(QWidget):
         main_layout.addWidget(self.threat_banner)
         
         main_layout.addStretch()
-        
         self.update_ui()
         
     def paintEvent(self, event):
         painter = QPainter(self)
-        pixmap = QPixmap("assets/images/restaurant_bg.jpg")
+        from ui.renderer import SceneComposer
+        pixmap = SceneComposer.compose_restaurant(self.state, self.evening_mode)
         painter.drawPixmap(self.rect(), pixmap)
         
     def update_ui(self, evening_mode=False):
+        self.evening_mode = evening_mode
         c = self.state.competitor
         if c.is_active and not c.counter_marketing_active:
             self.threat_banner.setVisible(True)
         else:
             self.threat_banner.setVisible(False)
+        self.update()

@@ -17,14 +17,14 @@ class GameOverScreen(QWidget):
         layout.setSpacing(20)
         
         self.status_title = QLabel("Game Over", self)
-        self.status_title.setStyleSheet(f"font-size: 36px; font-weight: bold; color: {ThemeManager.RED_WARNING};")
+        self.status_title.setStyleSheet(f"font-size: 42px; font-weight: bold; color: {ThemeManager.RED_WARNING};")
         self.status_title.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_title)
         
         self.summary_text = QLabel(self)
         self.summary_text.setWordWrap(True)
         self.summary_text.setAlignment(Qt.AlignCenter)
-        self.summary_text.setStyleSheet("font-size: 16px; line-height: 1.5; color: #1F1717; margin-bottom: 20px;")
+        self.summary_text.setStyleSheet("font-size: 22px; line-height: 1.5; color: #1F1717; margin-bottom: 20px;")
         layout.addWidget(self.summary_text)
         
         btn_layout = QHBoxLayout()
@@ -53,26 +53,25 @@ class GameOverScreen(QWidget):
         UIAudio.play_click()
         self.quit_game.emit()
 
-    def set_results(self, victory: bool, partner_name: str, final_rep: float, final_cash: float):
+    def set_results(self, victory: bool, partner_name: str, final_rep: float, final_cash: float, ending_name: str = "", ending_desc: str = ""):
         if victory:
             UIAudio.play_success()
-            self.status_title.setText("🍲 VICTORY! 🍲")
-            self.status_title.setStyleSheet(f"font-size: 40px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+            self.status_title.setText(ending_name if ending_name else "🍲 VICTORY! 🍲")
+            self.status_title.setStyleSheet(f"font-size: 34px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
             
             victory_msg = (
-                f"<b>Congratulations!</b> You have completed the V1 Prototype of <b>Infinite Pot</b>!<br/><br/>"
-                f"You successfully upgraded to a full Town Restaurant, bought a cozy home, "
-                f"married your partner <b>{partner_name}</b>, and successfully defended your business "
-                f"against Chef Sebastian's aggressive smear campaigns.<br/><br/>"
+                f"<b>Congratulations!</b> You have completed your journey in <b>Infinite Pot</b>!<br/><br/>"
+                f"<b>{ending_name}</b><br/>"
+                f"{ending_desc}<br/><br/>"
                 f"Through it all, you cooked unlimited food with a single pot, yet food was never the challenge. "
-                f"Balancing bills, relationships, employees, and rivals was.<br/><br/>"
-                f"<b>Final Restaurant Reputation:</b> {final_rep:.1f}/100.0<br/>"
+                f"Balancing bills, relationships, employees, and time was.<br/><br/>"
+                f"<b>Community Standing:</b> {final_rep:.1f}/100.0<br/>"
                 f"<b>Ending Cash Balance:</b> ${final_cash:.2f}"
             )
             self.summary_text.setText(victory_msg)
         else:
             self.status_title.setText("💀 Game Over 💀")
-            self.status_title.setStyleSheet(f"font-size: 36px; font-weight: bold; color: {ThemeManager.RED_WARNING};")
+            self.status_title.setStyleSheet(f"font-size: 42px; font-weight: bold; color: {ThemeManager.RED_WARNING};")
             
             loss_msg = (
                 "You retired from the culinary business or had to close down.<br/><br/>"

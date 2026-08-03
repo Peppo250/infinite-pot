@@ -14,8 +14,9 @@ class TavernMenuScreen(QWidget):
         
     def paintEvent(self, event):
         painter = QPainter(self)
-        pixmap = QPixmap("assets/images/tavern_bg.jpg")
+        from ui.renderer import SceneComposer
+        pixmap = SceneComposer.compose_tavern(self.state)
         painter.drawPixmap(self.rect(), pixmap)
         
     def update_ui(self):
-        pass
+        self.update()

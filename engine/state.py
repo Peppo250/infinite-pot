@@ -45,6 +45,8 @@ class GameState:
         self.town = Town()
         self.memory = {}
         self.player_assets = []
+        self._time_of_day = "Morning"
+        self._season = None
         
         # Event System
         self.events = EventSystem()
@@ -55,6 +57,12 @@ class GameState:
         self.day: int = 1
         self.week: int = 1
         self.days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        
+        # Economy of Life Variables
+        self.free_time: float = 4.0
+        self.personal_fulfillment: float = 50.0
+        self.days_since_competitor_start: int = 0
+        self.days_profitable_streak: int = 0
         
     def _load_config(self, path: str) -> dict[str, Any]:
         """Loads balance_config.json securely, falling back to defaults if error occurs."""
@@ -81,6 +89,44 @@ class GameState:
     def day_name(self) -> str:
         return self.days_of_week[(self.day - 1) % 7]
 
+    @property
+    def season(self) -> str:
+        """Determines the current season based on the day (30 days per season)."""
+        if hasattr(self, '_season') and self._season is not None:
+            return self._season
+        cycle = (self.day - 1) // 30 % 4
+        if cycle == 0:
+            return "Spring"
+        elif cycle == 1:
+            return "Summer"
+        elif cycle == 2:
+            return "Autumn"
+        else:
+            return "Winter"
+
+    @season.setter
+    def season(self, val: str) -> None:
+        self._season = val
+
+    @property
+    def time_of_day(self) -> str:
+        return self._time_of_day
+
+    @time_of_day.setter
+    def time_of_day(self, val: str) -> None:
+        self._time_of_day = val
+
+    def get_max_free_time(self) -> float:
+        base = 4.0
+        # Time-saving upgrades
+        if "industrial_dishwasher" in self.restaurant.upgrades:
+            base += 1.0
+        if "auto_inventory" in self.restaurant.upgrades:
+            base += 0.5
+        if "self_service_fountain" in self.restaurant.upgrades:
+            base += 0.5
+        return base
+
     def simulate_business_day(self, player_work_hours: int) -> dict[str, Any]:
         """Simulates the business day based on pricing, staff, and marketing status.
         Updates player cash, energy, and restaurant reputation.
@@ -88,6 +134,26 @@ class GameState:
         """
         p = self.romance.partner
         active_employees = self.employees.get_active_employees()
+        
+        # Calculate Free Time for the evening phase
+        max_free = self.get_max_free_time()
+        overtime_hours = max(0, player_work_hours - 8)
+        self.free_time = max(0.0, max_free - overtime_hours)
+        
+        if player_work_hours > 10:
+            self.personal_fulfillment = max(0.0, self.personal_fulfillment - 2.0)
+            
+        # Overtime relationship friction memory
+        if player_work_hours > 8 and p:
+            from player.romance import Memory
+            if not any(m.title == "Partner Worked Late" for m in p.memories):
+                p.memories.append(Memory(
+                    title="Partner Worked Late",
+                    category="Everyday",
+                    emotion="Disappointed",
+                    strength=3.0
+                ))
+                p.trust = max(0.0, p.trust - 2.0)
         
         # Determine if partner helps in the shop today
         partner_helps_today = False
@@ -141,8 +207,8 @@ class GameState:
         player_energy_cost = player_work_hours * hourly_energy_cost
         self.player.adjust_energy(-player_energy_cost)
         
-        # 4. Calculate employees capacity (they work up to min(8, open_hours))
-        employee_capacity = sum(int(min(8, open_hours) * (2 + e.skill * 4)) for e in active_employees)
+        # 4. Calculate employees capacity (they work up to min(8, open_hours), scaled by part-time status)
+        employee_capacity = sum(int(min(8, open_hours) * (2 + e.skill * 4) * (0.5 if e.is_part_time else 1.0)) for e in active_employees)
         
         # 5. Calculate partner's capacity (helps serve up to min(8, open_hours) hours, 4 meals/hour)
         partner_capacity = min(8, open_hours) * 4 if partner_helps_today else 0
@@ -156,7 +222,16 @@ class GameState:
         turned_away = max(0, potential_customers - total_capacity)
         
         # 8. Revenue & Tips calculation
-        revenue = round(actual_served * self.restaurant.menu_price, 2)
+        # Add Optional Extras
+        extra_spend = 0.0
+        if "beverage_station" in self.restaurant.upgrades:
+            extra_spend += 1.50
+        if "dessert_cabinet" in self.restaurant.upgrades:
+            extra_spend += 3.00
+        if "appetizer_bar" in self.restaurant.upgrades:
+            extra_spend += 4.50
+            
+        revenue = round(actual_served * (self.restaurant.menu_price + extra_spend), 2)
         
         # Calculate worker quality for tips and reputation
         workers_count = (1 if player_work_hours > 0 else 0) + len(active_employees) + (1 if partner_helps_today else 0)
@@ -177,6 +252,9 @@ class GameState:
         self.player.adjust_cash(total_income)
         self.restaurant.meals_served_today = actual_served
         self.restaurant.revenue_today = total_income
+        
+        # Degrading decor durability: every 10 customers served drains 1.0% durability
+        self.restaurant.decor_durability = max(0.0, self.restaurant.decor_durability - actual_served * 0.1)
         
         # Automatic Bank Loan Repayment from daily sales (percentage increases as you upgrade restaurant)
         loan_payment = 0.0
@@ -281,7 +359,7 @@ class GameState:
         
         # Servicing capacity in 1 hour
         player_capacity = 3
-        employee_capacity = sum(int(2 + e.skill * 4) for e in active_employees)
+        employee_capacity = sum(int((2 + e.skill * 4) * (0.5 if e.is_part_time else 1.0)) for e in active_employees)
         partner_capacity = len(helping_girls) * 4
         total_capacity = player_capacity + employee_capacity + partner_capacity
         
@@ -289,7 +367,16 @@ class GameState:
         actual_served = min(potential_customers, total_capacity, max_hourly_capacity)
         turned_away = max(0, potential_customers - total_capacity)
         
-        revenue = round(actual_served * self.restaurant.menu_price * sales_mult, 2)
+        # Add Optional Extras
+        extra_spend = 0.0
+        if "beverage_station" in self.restaurant.upgrades:
+            extra_spend += 1.50
+        if "dessert_cabinet" in self.restaurant.upgrades:
+            extra_spend += 3.00
+        if "appetizer_bar" in self.restaurant.upgrades:
+            extra_spend += 4.50
+            
+        revenue = round(actual_served * (self.restaurant.menu_price + extra_spend) * sales_mult, 2)
         
         # Tips
         workers_count = 1 + len(active_employees) + len(helping_girls)
@@ -301,6 +388,9 @@ class GameState:
         
         total_income = round(revenue + tips, 2)
         self.player.adjust_cash(total_income)
+        
+        # Degrading decor durability: every 10 customers served drains 1.0% durability
+        self.restaurant.decor_durability = max(0.0, self.restaurant.decor_durability - actual_served * 0.1)
         
         # Record transactions in real-time
         if revenue > 0:
@@ -343,13 +433,30 @@ class GameState:
                 self.player.adjust_cash(-loan_payment)
                 self.finance.record_transaction("Loan Interest", loan_payment, f"Auto-repayment ({int(pct*100)}%)")
         
+        # Generate narrative soul log event during shifts
+        soul_event = None
+        if actual_served > 0:
+            if random.random() < 0.25:
+                npc_dialogues = [
+                    "Old Barnaby sits by the window, contentedly slurping his soup.",
+                    "Ms. Martha sits at a corner table grading essays, enjoying her warm tea.",
+                    "Toby the mail carrier runs in for a quick bite, leaving with a smile.",
+                    "Young Lily carefully counts out her coppers to buy a dessert slice.",
+                    "Arthur, the retired chef, quietly observes your kitchen layout and nods.",
+                    "A couple sitting near the window table are sharing a laugh.",
+                    "A warm aroma fills the street, causing passersby to look in with curiosity.",
+                    "Rain taps the glass pane as customers snuggle near the warm stove."
+                ]
+                soul_event = random.choice(npc_dialogues)
+                
         return {
             "served": actual_served,
             "revenue": revenue,
             "tips": tips,
             "total_income": total_income,
             "loan_payment": loan_payment,
-            "rep_change": rep_change
+            "rep_change": rep_change,
+            "soul_event": soul_event
         }
 
     def advance_day(self) -> list[str]:
@@ -358,29 +465,101 @@ class GameState:
         Returns a list of notification strings describing overnight events.
         """
         notifications = []
+        dl = self.finance.daily_ledger
         
-        # 1. Apply maintenance and wages
-        maint_cost = self.restaurant.calculate_daily_maintenance()
-        self.player.adjust_cash(-maint_cost)
-        self.finance.record_transaction("Maintenance", maint_cost, f"Daily maintenance for Level {self.restaurant.level} + upgrades")
+        # Track streak of profitable days
+        if dl.net_profit > 0:
+            self.days_profitable_streak += 1
+        else:
+            self.days_profitable_streak = 0
+            
+        # 1. Apply Economic Climate Multipliers
+        climate = self.town.economic_climate
+        maint_mult = 1.0
+        wage_mult = 1.0
         
-        # If the player has a house, charge house maintenance
+        if climate == "Supply Strike":
+            maint_mult = 1.25
+            wage_mult = 1.20
+        elif climate == "Monsoon Week":
+            maint_mult = 1.35
+            wage_mult = 1.0
+        elif climate in ["Founder's Feast", "Harvest Festival", "Festival"]:
+            maint_mult = 1.10
+            wage_mult = 1.10
+        elif climate in ["Economic Slowdown", "Recession"]:
+            maint_mult = 1.0
+            wage_mult = 0.85
+            
+        # Rent / Diner Fixed Maintenance
+        base_maint = self.restaurant.calculate_daily_maintenance() * maint_mult
+        self.player.adjust_cash(-base_maint)
+        self.finance.record_transaction("Maintenance", base_maint, f"Rent & Permits (Lvl {self.restaurant.level})")
+        
+        # Base Utilities
+        base_utilities_map = {0: 0.0, 1: 2.0, 2: 5.0, 3: 20.0, 4: 50.0}
+        base_util = base_utilities_map.get(self.restaurant.level, 0.0) * maint_mult
+        
+        # Variable Expenses: Power ($0.20/cust) & Cleaning ($0.15/cust)
+        served = self.restaurant.meals_served_today
+        power_cost = round(served * 0.20, 2)
+        cleaning_cost = round(served * 0.15, 2)
+        
+        self.player.adjust_cash(-power_cost)
+        self.player.adjust_cash(-cleaning_cost)
+        
+        self.finance.record_transaction("Utilities", base_util + power_cost, f"Utilities & Power")
+        self.finance.record_transaction("Cleaning", cleaning_cost, f"Cleaning & Sanitization")
+        
+        # Household Expenses (Lifestyle Inflation)
         if self.house.purchased:
-            house_maint = self.house.daily_maintenance
-            self.player.adjust_cash(-house_maint)
-            self.finance.record_transaction("Maintenance", house_maint, "Daily house maintenance")
+            if self.restaurant.level >= 4:
+                household = 60.0  # Luxury Estate
+            else:
+                household = 28.0  # Cozy Cottage
+        else:
+            if self.restaurant.level == 0:
+                household = 5.0   # Street Vendor
+            else:
+                household = 12.0  # Small Apartment
+        self.player.adjust_cash(-household)
+        self.finance.record_transaction("Household", household, f"Household Expenses")
 
         # Employee Wages
-        wages = self.employees.calculate_daily_wages()
+        wages = self.employees.calculate_daily_wages(wage_mult)
         if wages > 0:
             self.player.adjust_cash(-wages)
-            self.finance.record_transaction("Wages", wages, f"Wages for hired staff")
+            self.finance.record_transaction("Wages", wages, f"Staff Wages")
+            
+        # Decrement temporary salary cuts duration
+        for e in self.employees.hired:
+            if e.pay_cut_days_left > 0:
+                e.pay_cut_days_left -= 1
+            
+        # Unexpected events (broken sink, healer fee, etc.)
+        if random.random() < 0.12:
+            repair_events = [
+                ("A kitchen sink faucet pipe burst overnight", random.randint(20, 45)),
+                ("An oven heating coil burned out during service", random.randint(30, 55)),
+                ("A chair leg broke under a heavy customer", random.randint(15, 25)),
+                ("Slipped on a wet kitchen floor; local healer's fee", random.randint(20, 35)),
+                ("Diner roof tiles slid off during strong winds", random.randint(40, 65))
+            ]
+            desc, cost = random.choice(repair_events)
+            self.player.adjust_cash(-cost)
+            self.finance.record_transaction("Misc", cost, desc)
+            notifications.append(f"🔧 Unexpected Event: {desc}! Cost: -${cost:.2f}")
             
         # Partner co-owner support
         p = self.romance.partner
         if p and p.is_co_owner:
             self.restaurant.adjust_reputation(1.5)
-            notifications.append(f"Co-Owner {p.name}'s support boosted your restaurant's atmosphere! (+1.5 Reputation)")
+            notifications.append(f"Co-Owner {p.name}'s support boosted your restaurant's standing! (+1.5 Standing)")
+
+        # Update NPC Minds overnight
+        for char in self.romance.characters:
+            if hasattr(char, "mind") and char.mind:
+                char.mind.update_evening_state(self)
 
         # Romance Decay if dating without a house
         if p and p.is_partner and not self.house.purchased:
@@ -394,20 +573,82 @@ class GameState:
             self.finance.record_transaction("Loan Interest", interest, "Daily accrued loan interest")
             notifications.append(f"Bank Loan: Daily interest of ${interest:.2f} was added to your balance.")
 
-        # 3. Rest Player (energy recovery)
+        # 3. Rest Player (energy recovery based on house benefits)
+        sleep_recovery = self.player.sleep_energy_recovery
         if self.house.purchased:
-            # Sleeping at home fully replenishes energy
-            self.player.energy = self.player.max_energy
-            notifications.append("You slept in your cozy home. Energy fully restored to 100%!")
+            sleep_recovery = self.player.max_energy
+            # bed / home upgrades recovery bonuses
+            for up_id in self.house.upgrades:
+                up = next((u for u in self.house.available_upgrades if u.id == up_id), None)
+                if up:
+                    sleep_recovery += up.energy_recovery_bonus
+            self.player.energy = min(self.player.max_energy, sleep_recovery)
+            notifications.append("You slept in your cozy cottage. Energy restored!")
         else:
-            # Sleeping in the shop restores a base amount
             self.player.recover_sleep(bonus=0.0)
             notifications.append("You slept on a makeshift cot in the shop. Energy partially restored.")
+
+        # 4. Personal Fulfillment Updates overnight
+        fulfillment_change = 0.0
+        if dl.dates > 0:
+            fulfillment_change += 5.0
+        if dl.misc > 0:
+            fulfillment_change += 2.0
+            
+        # Day off
+        if dl.revenue == 0.0:
+            fulfillment_change += 4.0
         
-        # 4. Economic Climate & Competitor Updates
+        # Upgrades bonuses
+        if self.house.purchased:
+            if "backyard_greenhouse" in self.house.upgrades:
+                fulfillment_change += 2.0
+            if "cozy_couch" in self.house.upgrades:
+                fulfillment_change += 1.0
+                
+        # Relationship neglect check
+        if dl.dates > 0 or dl.misc > 0:
+            self.days_since_social = 0
+        else:
+            if not hasattr(self, 'days_since_social'):
+                self.days_since_social = 0
+            self.days_since_social += 1
+            if self.days_since_social >= 7:
+                fulfillment_change -= 3.0
+                notifications.append("💔 Personal Fulfillment: You've been ignoring your relationships lately. (-3.0 Fulfillment)")
+                
+        # Hoarding warning
+        if self.player.cash > 3000.0 and not self.house.purchased:
+            fulfillment_change -= 2.0
+            notifications.append("💼 Personal Fulfillment: Money is piling up, but you still sleep in the shop. (-2.0 Fulfillment)")
+            
+        self.personal_fulfillment = max(0.0, min(100.0, self.personal_fulfillment + fulfillment_change))
+
+        # 5. Economic Climate & Competitor Updates
         econ_msg = self.town.roll_economic_climate()
         if econ_msg:
             notifications.append(econ_msg)
+            
+        # Competitor Active Logic
+        if self.competitor.is_active:
+            self.days_since_competitor_start += 1
+            
+            # Every 5 days, Chef Sebastian launches a new priority action
+            if self.days_since_competitor_start % 5 == 0:
+                notice = self.competitor.roll_sebastian_action()
+                if notice:
+                    notifications.append(f"👨‍🍳 Sebastian's Move: {notice}")
+            
+            # Apply Live Music expectation reputation drain
+            if self.competitor.active_action == "Live Music":
+                self.restaurant.adjust_reputation(-0.5)
+                notifications.append("🎵 Sebastian's Live Harpist has Oakhaven talking, raising local dining standards. (-0.5 Reputation)")
+                
+        # 6. Old Nostalgic Customers (Standing >= 70 & Day >= 25)
+        if self.restaurant.reputation >= 70.0 and self.day >= 25:
+            if random.random() < 0.15:
+                self.restaurant.adjust_reputation(1.0)
+                notifications.append("💬 Standing: A customer smiled and said: 'I've been eating here since you only had a used food cart by the street.' (+1.0 standing)")
             
         # Cheating detection check (technically cheat on a person, got caught logic)
         partners_count = sum(1 for c in self.romance.characters if c.is_partner or c.is_co_owner)
@@ -496,3 +737,65 @@ class GameState:
         self.week = (self.day - 1) // 7 + 1
         
         return notifications
+
+    def check_retirement_eligibility(self) -> tuple[bool, list[str]]:
+        reasons = []
+        is_eligible = True
+        
+        # 1. Level check
+        if self.restaurant.level < 3:
+            is_eligible = False
+            reasons.append("Own an Edge Shop (Level 3) or Town Restaurant (Level 4)")
+            
+        # 2. House check
+        if not self.house.purchased:
+            is_eligible = False
+            reasons.append("Purchase and own a Cottage")
+            
+        # 3. Relationship check
+        is_married = self.romance.is_co_owner or any(c.is_co_owner for c in self.romance.characters)
+        if not is_married:
+            is_eligible = False
+            reasons.append("Marry your partner (Business Co-Ownership stage)")
+            
+        # 4. Profit streak
+        if self.days_profitable_streak < 7:
+            is_eligible = False
+            reasons.append("Maintain profitability for 7 consecutive days")
+            
+        # 5. Competitor survived
+        if self.competitor.is_active and self.days_since_competitor_start < 30:
+            is_eligible = False
+            reasons.append(f"Survive competitor pressure for 30 days ({self.days_since_competitor_start}/30 days)")
+            
+        return is_eligible, reasons
+
+    def get_retirement_ending(self) -> tuple[str, str]:
+        fulfillment = self.personal_fulfillment
+        standing = self.restaurant.reputation
+        lvl = self.restaurant.level
+        partner_name = self.romance.partner_name if self.romance.partner else "Valerie"
+        
+        if lvl == 3 and fulfillment >= 70 and standing >= 70:
+            return (
+                "Ending A: The Quiet Life",
+                f"You retired peacefully in Oakhaven valley. Sketches of your cozy cottage hang by the fireplace. "
+                f"Barnaby continues to enjoy his morning soup at the Edge Shop, now run by a local apprentice. "
+                f"You and {partner_name} spend your afternoons reading on the porch. Success gave you options, and you chose peace. "
+                f"You sit on the porch swing as the valley rain falls, watching the lights of Oakhaven glow in the distance."
+            )
+        elif lvl >= 4 and fulfillment >= 50 and standing >= 70:
+            return (
+                "Ending B: The Respected Tycoon",
+                f"You retired at the peak of your career. A framed photo sits on the mantelpiece showing your Town Restaurant staff, "
+                f"with {partner_name} smiling next to the mayor holding a landmark award. Chef Sebastian sent a congratulatory letter, "
+                f"acknowledging your work. The town carries on, but your story is woven into its streets. "
+                f"You sit quietly on the cottage porch swing, content that you balanced grand ambition with personal happiness."
+            )
+        else:
+            return (
+                "Ending C: Lonely Success",
+                f"You retired with deep pockets, but the cottage feels empty. Your restaurant is a thriving enterprise, "
+                f"yet the ledger shows the cost of success: missed evenings, cold meals, and hollow conversations with {partner_name}. "
+                f"The town remembers your food, but you sit alone on the porch, looking at the distant valley lights and wondering when enough would have been enough."
+            )

@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
 from ui.widgets.notifications import NotificationManager
-from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, OptionsDialog, DevSetupDialog
+from ui.dialogs.custom_dialogs import ConfirmDialog, TextInputDialog, ReceiptDialog, ChoicesDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, OptionsDialog, DevSetupDialog, MindConversationDialog
 
 from ui.screens.main_menu import MainMenuScreen
 from ui.screens.gameplay import GameplayScreen
@@ -85,13 +85,13 @@ class MainWindow(QMainWindow):
         place_log_layout.setSpacing(2)
         
         self.log_hdr_lbl = QLabel("<b>📜 Place Activity & Dialogue Log</b>", self)
-        self.log_hdr_lbl.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_BROWN};")
+        self.log_hdr_lbl.setStyleSheet(f"font-size: 18px; color: {ThemeManager.DARK_BROWN};")
         place_log_layout.addWidget(self.log_hdr_lbl)
         
         self.log_text_edit = QTextEdit(self)
         self.log_text_edit.setReadOnly(True)
         self.log_text_edit.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.log_text_edit.setStyleSheet(f"background: transparent; border: none; font-size: 13px; font-family: VT323, monospace; color: {ThemeManager.DARK_BROWN};")
+        self.log_text_edit.setStyleSheet(f"background: transparent; border: none; font-size: 18px; font-family: VT323, monospace; color: {ThemeManager.DARK_BROWN};")
         place_log_layout.addWidget(self.log_text_edit)
         
         left_layout.addWidget(self.place_log_frame)
@@ -157,12 +157,12 @@ class MainWindow(QMainWindow):
         
         # 1. Shop Name
         self.shop_name_lbl = QLabel(self.state.restaurant.name, self)
-        self.shop_name_lbl.setStyleSheet(f"font-size: 18px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.shop_name_lbl.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.shop_name_lbl)
         
         # 2. Cash
         self.cash_lbl = QLabel(f"Cash: ${self.state.player.cash:.2f}", self)
-        self.cash_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.cash_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.cash_lbl)
         
         # 3. Energy
@@ -171,38 +171,43 @@ class MainWindow(QMainWindow):
         energy_layout.setContentsMargins(0, 0, 0, 0)
         energy_layout.setSpacing(5)
         e_lbl = QLabel("Energy:", self)
-        e_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        e_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.energy_bar = QProgressBar(self)
         self.energy_bar.setRange(0, 100)
-        self.energy_bar.setMaximumWidth(80)
+        self.energy_bar.setMaximumWidth(120)
         self.energy_bar.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
         energy_layout.addWidget(e_lbl)
         energy_layout.addWidget(self.energy_bar)
         hud_layout.addWidget(energy_widget)
         
-        # 4. Reputation
+        # 4. Standing
         rep_widget = QWidget(self)
         rep_layout = QHBoxLayout(rep_widget)
         rep_layout.setContentsMargins(0, 0, 0, 0)
         rep_layout.setSpacing(5)
-        r_lbl = QLabel("Rep:", self)
-        r_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        r_lbl = QLabel("Standing:", self)
+        r_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.rep_bar = QProgressBar(self)
         self.rep_bar.setRange(0, 100)
-        self.rep_bar.setMaximumWidth(80)
+        self.rep_bar.setMaximumWidth(120)
         self.rep_bar.setStyleSheet("QProgressBar::chunk { background-color: #82A0D8; }")
         rep_layout.addWidget(r_lbl)
         rep_layout.addWidget(self.rep_bar)
         hud_layout.addWidget(rep_widget)
 
-        # 5. Calendar / Phase (Now moved between Reputation and Partner!)
+        # 4b. Free Time Hour Indicator
+        self.free_time_lbl = QLabel(self)
+        self.free_time_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        hud_layout.addWidget(self.free_time_lbl)
+
+        # 5. Calendar / Phase
         self.day_lbl = QLabel(self)
-        self.day_lbl.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.day_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         hud_layout.addWidget(self.day_lbl)
         
         # 6. Partner
         self.partner_lbl = QLabel(self)
-        self.partner_lbl.setStyleSheet(f"font-size: 16px; color: {ThemeManager.DARK_BROWN}; font-weight: bold;")
+        self.partner_lbl.setStyleSheet(f"font-size: 20px; color: {ThemeManager.DARK_BROWN}; font-weight: bold;")
         hud_layout.addWidget(self.partner_lbl)
         
         # Stretch columns
@@ -210,8 +215,9 @@ class MainWindow(QMainWindow):
         hud_layout.setStretch(1, 2)
         hud_layout.setStretch(2, 2)
         hud_layout.setStretch(3, 2)
-        hud_layout.setStretch(4, 3)
-        hud_layout.setStretch(5, 2)
+        hud_layout.setStretch(4, 2)
+        hud_layout.setStretch(5, 3)
+        hud_layout.setStretch(6, 2)
 
     def animate_switch(self, target_index: int):
         self.stacked_opacity = QGraphicsOpacityEffect(self.stacked_widget)
@@ -281,7 +287,13 @@ class MainWindow(QMainWindow):
         p = self.state.player
         r = self.state.restaurant
         rom = self.state.romance
-        self.game_over_screen.set_results(self.victory, rom.partner_name, r.reputation, p.cash)
+        
+        ending_name = ""
+        ending_desc = ""
+        if self.victory:
+            ending_name, ending_desc = self.state.get_retirement_ending()
+            
+        self.game_over_screen.set_results(self.victory, rom.partner_name, r.reputation, p.cash, ending_name, ending_desc)
         self.animate_switch(5)
 
     def on_start_game(self):
@@ -299,6 +311,10 @@ class MainWindow(QMainWindow):
                 
             self.show_gameplay()
             self.add_log(f"Started journey for '{name}' at Level {self.state.restaurant.level} with ${self.state.player.cash:.2f} cash!")
+            
+            # Show Day 1 Newspaper!
+            from ui.dialogs.custom_dialogs import NewspaperDialog
+            NewspaperDialog(self.state, self).exec()
 
     def on_restart_game(self):
         # Reinstate state from config
@@ -407,7 +423,7 @@ class MainWindow(QMainWindow):
         
         self.sidebar_status_lbl = QLabel(self)
         self.sidebar_status_lbl.setWordWrap(True)
-        self.sidebar_status_lbl.setStyleSheet(f"font-size: 13px; line-height: 1.3; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
+        self.sidebar_status_lbl.setStyleSheet(f"font-size: 18px; line-height: 1.3; border: 1.5px solid {ThemeManager.DARK_BROWN}; padding: 6px; background-color: rgba(245, 235, 224, 0.6); color: {ThemeManager.DARK_BROWN};")
         rest_lay.addWidget(self.sidebar_status_lbl)
         
         self.stop_btn = QPushButton("Stop Work", self)
@@ -441,7 +457,7 @@ class MainWindow(QMainWindow):
         bar_lay.setSpacing(4)
         
         soc_hdr = QLabel("<b>🌹 Socialize</b>", self)
-        soc_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
+        soc_hdr.setStyleSheet(f"font-size: 20px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(soc_hdr)
         
         self.bar_girls_scroll = QScrollArea(self)
@@ -455,7 +471,7 @@ class MainWindow(QMainWindow):
         bar_lay.addWidget(self.bar_girls_scroll)
         
         app_hdr = QLabel("<b>👥 Job Applicants</b>", self)
-        app_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
+        app_hdr.setStyleSheet(f"font-size: 20px; color: {ThemeManager.DARK_BROWN};")
         bar_lay.addWidget(app_hdr)
         
         self.bar_cand_scroll = QScrollArea(self)
@@ -480,22 +496,25 @@ class MainWindow(QMainWindow):
         home_lay.setSpacing(4)
         
         rom_hdr = QLabel("<b>🌹 Dating & Romance</b>", self)
-        rom_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
+        rom_hdr.setStyleSheet(f"font-size: 20px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(rom_hdr)
         
         self.home_rom_lbl = QLabel(self)
         self.home_rom_lbl.setWordWrap(True)
-        self.home_rom_lbl.setStyleSheet("font-size: 13px; font-weight: bold;")
+        self.home_rom_lbl.setStyleSheet("font-size: 18px; font-weight: bold;")
         home_lay.addWidget(self.home_rom_lbl)
         
-        self.home_rom_progress = QProgressBar(self)
-        self.home_rom_progress.setRange(0, 100)
-        self.home_rom_progress.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
-        home_lay.addWidget(self.home_rom_progress)
+        self.home_story_btn = QPushButton("📖 View Our Story Log", self)
+        self.home_story_btn.clicked.connect(self.on_view_story_clicked)
+        home_lay.addWidget(self.home_story_btn)
         
         self.home_date_btn = QPushButton("💖 Go on a Date (-$100 | 25 E)", self)
         self.home_date_btn.clicked.connect(self.on_go_date)
         home_lay.addWidget(self.home_date_btn)
+        
+        self.home_relax_btn = QPushButton("🔥 Spend a Quiet Evening at Home", self)
+        self.home_relax_btn.clicked.connect(self.on_relax_tonight)
+        home_lay.addWidget(self.home_relax_btn)
         
         self.home_ring_btn = QPushButton("💍 Buy Ring (-$2500)", self)
         self.home_ring_btn.clicked.connect(self.on_buy_ring)
@@ -510,8 +529,14 @@ class MainWindow(QMainWindow):
         self.home_break_btn.clicked.connect(self.on_break_up)
         home_lay.addWidget(self.home_break_btn)
         
+        self.home_pardon_btn = QPushButton("⚖️ Pay Court Pardon Fee (-$500)", self)
+        self.home_pardon_btn.setObjectName("primary-action-btn")
+        self.home_pardon_btn.clicked.connect(self.on_pay_pardon)
+        self.home_pardon_btn.setVisible(False)
+        home_lay.addWidget(self.home_pardon_btn)
+        
         furn_hdr = QLabel("<b>🏡 Home Furnishings</b>", self)
-        furn_hdr.setStyleSheet(f"font-size: 15px; color: {ThemeManager.DARK_BROWN};")
+        furn_hdr.setStyleSheet(f"font-size: 20px; color: {ThemeManager.DARK_BROWN};")
         home_lay.addWidget(furn_hdr)
         
         self.home_upgrades_scroll = QScrollArea(self)
@@ -523,6 +548,32 @@ class MainWindow(QMainWindow):
         self.home_upgrades_layout.setSpacing(3)
         self.home_upgrades_scroll.setWidget(self.home_upgrades_content)
         home_lay.addWidget(self.home_upgrades_scroll)
+        
+        decor_hdr = QLabel("<b>🎨 Diner Maintenance</b>", self)
+        decor_hdr.setStyleSheet(f"font-size: 19px; color: {ThemeManager.DARK_BROWN}; margin-top: 5px;")
+        home_lay.addWidget(decor_hdr)
+        
+        self.decor_status_lbl = QLabel(self)
+        self.decor_status_lbl.setStyleSheet("font-size: 16px;")
+        home_lay.addWidget(self.decor_status_lbl)
+        
+        self.home_clean_decor_btn = QPushButton("🧼 Clean & Paint Diner (-$10 | 1h)", self)
+        self.home_clean_decor_btn.clicked.connect(self.on_clean_decor)
+        home_lay.addWidget(self.home_clean_decor_btn)
+        
+        ret_hdr = QLabel("<b>🎉 Life Goals (Retirement)</b>", self)
+        ret_hdr.setStyleSheet(f"font-size: 19px; color: {ThemeManager.DARK_BROWN}; margin-top: 5px;")
+        home_lay.addWidget(ret_hdr)
+        
+        self.retirement_info_lbl = QLabel(self)
+        self.retirement_info_lbl.setStyleSheet("font-size: 15px; color: #555555;")
+        self.retirement_info_lbl.setWordWrap(True)
+        home_lay.addWidget(self.retirement_info_lbl)
+        
+        self.home_retire_btn = QPushButton("🎉 Choose Retirement", self)
+        self.home_retire_btn.setStyleSheet("font-weight: bold; background-color: #8ADAB2; color: #1F1717; font-size: 17px; padding: 4px;")
+        self.home_retire_btn.clicked.connect(self.on_retire_clicked)
+        home_lay.addWidget(self.home_retire_btn)
         
         self.home_sleep_btn = QPushButton("🛌 Sleep & End Day", self)
         self.home_sleep_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
@@ -665,6 +716,8 @@ class MainWindow(QMainWindow):
             self.notification_manager.add_notification(
                 f"Hour {self.active_hours_passed}: Served {res['served']} meals! Earned ${res['total_income']:.2f}", "success"
             )
+            if res.get("soul_event"):
+                self.add_log(res["soul_event"])
             
         # Max overtime cutoff reached
         if self.active_hours_passed >= self.target_work_hours:
@@ -794,20 +847,55 @@ class MainWindow(QMainWindow):
         h = self.state.house
         
         partner = rom.partner
-        if not partner:
-            self.home_rom_lbl.setText("Status: <b>Single</b>")
-            self.home_rom_progress.setValue(0)
+        if rom.caught_cheating:
+            self.home_rom_lbl.setText("Status: <b>⚖️ Barred from Dating (Cheating Scandal)</b>")
+            self.home_story_btn.setEnabled(False)
             self.home_date_btn.setEnabled(False)
+            self.home_relax_btn.setEnabled(False)
             self.home_ring_btn.setEnabled(False)
             self.home_propose_btn.setEnabled(False)
             self.home_break_btn.setEnabled(False)
+            self.home_pardon_btn.setVisible(True)
+            self.home_pardon_btn.setEnabled(p.cash >= 500.0)
         else:
-            self.home_rom_lbl.setText(f"Partner: <b>{partner.name}</b> ({partner.archetype})")
-            self.home_rom_progress.setValue(int(rom.romance_level))
-            self.home_date_btn.setEnabled(p.cash >= 100.0 and p.energy >= 25)
-            self.home_ring_btn.setEnabled(not rom.has_ring and p.cash >= 2500.0)
-            self.home_propose_btn.setEnabled(rom.has_ring and not rom.is_co_owner and rom.romance_level >= 75)
-            self.home_break_btn.setEnabled(True)
+            self.home_pardon_btn.setVisible(False)
+            if not partner:
+                self.home_rom_lbl.setText("Status: <b>Single</b>")
+                self.home_story_btn.setEnabled(False)
+                self.home_date_btn.setEnabled(False)
+                self.home_relax_btn.setEnabled(False)
+                self.home_ring_btn.setEnabled(False)
+                self.home_propose_btn.setEnabled(False)
+                self.home_break_btn.setEnabled(False)
+            else:
+                rom_val = partner.romance_level
+                if rom_val >= 80:
+                    feeling = "Deeply Connected"
+                elif rom_val >= 60:
+                    feeling = "Close"
+                elif rom_val >= 40:
+                    feeling = "Comfortable"
+                elif rom_val >= 20:
+                    feeling = "Getting to know each other"
+                else:
+                    feeling = "Strangers"
+                    
+                last_mem_str = "None"
+                if partner.memories:
+                    last_mem = partner.memories[-1]
+                    last_mem_str = f"'{last_mem.title}' ({last_mem.age}d ago)"
+                    
+                self.home_rom_lbl.setText(
+                    f"Partner: <b>{partner.name}</b> ({partner.archetype})<br/>"
+                    f"Current Feeling: <b>{feeling}</b><br/>"
+                    f"Last Shared Memory: <b>{last_mem_str}</b>"
+                )
+                self.home_story_btn.setEnabled(True)
+                self.home_date_btn.setEnabled(p.cash >= 100.0 and p.energy >= 25)
+                self.home_relax_btn.setEnabled(self.state.free_time >= 1.0)
+                self.home_ring_btn.setEnabled(not rom.has_ring and p.cash >= 2500.0)
+                self.home_propose_btn.setEnabled(rom.has_ring and not rom.is_co_owner and rom.romance_level >= 75)
+                self.home_break_btn.setEnabled(True)
             
         # Update house upgrades list
         while self.home_upgrades_layout.count():
@@ -838,6 +926,29 @@ class MainWindow(QMainWindow):
                 fl.addWidget(btn)
                 
             self.home_upgrades_layout.addWidget(f)
+            
+        # Update decor status label & clean button
+        r = self.state.restaurant
+        self.decor_status_lbl.setText(
+            f"Visual Tier: <b>{r.decor_status}</b> ({r.decor_durability:.1f}%)"
+        )
+        self.home_clean_decor_btn.setEnabled(
+            self.state.free_time >= 1.0 and p.cash >= 10.0 and r.decor_durability < 100.0
+        )
+        
+        # Update retirement checklist
+        eligible, reasons = self.state.check_retirement_eligibility()
+        if eligible:
+            self.retirement_info_lbl.setText(
+                "<font color='#3A5F43'><b>🎉 You are fully eligible to retire!</b></font>"
+            )
+            self.home_retire_btn.setEnabled(True)
+        else:
+            reasons_str = "<br/>".join([f"• {r}" for r in reasons])
+            self.retirement_info_lbl.setText(
+                f"<b>Missing Requirements:</b><br/>{reasons_str}"
+            )
+            self.home_retire_btn.setEnabled(False)
 
     def interact_girl(self, girl):
         UIAudio.play_click()
@@ -861,14 +972,13 @@ class MainWindow(QMainWindow):
                     ConfirmDialog("Cannot Talk", "You need at least 10 energy to talk!", self).exec()
                     return
                 p.adjust_energy(-10)
-                msg, gain = girl.interact_talk()
-                girl.romance_level = min(100.0, girl.romance_level + gain)
-                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
-                for notice in notices:
-                    self.add_log(notice)
-                UIAudio.play_dialogue()
-                self.add_log(msg, speaker=girl.name)
-                ConfirmDialog(f"Talk with {girl.name}", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
+                m_dlg = MindConversationDialog(girl, self.state, self)
+                if m_dlg.exec():
+                    notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
+                    for notice in notices:
+                        self.add_log(notice)
+                    UIAudio.play_dialogue()
+                    self.add_log(m_dlg.conv_data["dialogue"], speaker=girl.name)
             elif idx == 1:
                 if p.cash < 25.0 or p.energy < 10:
                     ConfirmDialog("Cannot Buy Drink", "You need $25.00 and 10 energy to buy a drink!", self).exec()
@@ -876,14 +986,16 @@ class MainWindow(QMainWindow):
                 p.adjust_cash(-25.0)
                 p.adjust_energy(-10)
                 self.state.finance.record_transaction("Misc", 25.0, f"Bought drink for {girl.name}")
-                msg, gain = girl.interact_drink(25.0)
-                girl.romance_level = min(100.0, girl.romance_level + gain)
-                notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
-                for notice in notices:
-                    self.add_log(notice)
-                UIAudio.play_coin()
-                self.add_log(msg, speaker=girl.name)
-                ConfirmDialog("Bought Drink", f"{msg}\nRomance level is now {girl.romance_level:.1f}/100.", self).exec()
+                if hasattr(girl, "mind") and girl.mind:
+                    girl.mind.trust_network["Trust"] = min(100.0, girl.mind.trust_network.get("Trust", 40.0) + 4.0)
+                    girl.mind.trust_network["Comfort"] = min(100.0, girl.mind.trust_network.get("Comfort", 45.0) + 4.0)
+                m_dlg = MindConversationDialog(girl, self.state, self)
+                if m_dlg.exec():
+                    notices = rom.apply_jealousy(girl.name, self.state.day_name, self.state, self.current_place)
+                    for notice in notices:
+                        self.add_log(notice)
+                    UIAudio.play_coin()
+                    self.add_log(m_dlg.conv_data["dialogue"], speaker=girl.name)
             elif idx == 2 and "Ask out" in opts[idx]:
                 success, msg = rom.propose_relationship(girl.name, self.state.day_name, self.state, self.current_place)
                 if success:
@@ -915,21 +1027,103 @@ class MainWindow(QMainWindow):
                 ConfirmDialog("Hire Failed", msg, self).exec()
             self.update_hud()
 
+    def on_view_story_clicked(self):
+        UIAudio.play_click()
+        rom = self.state.romance
+        partner = rom.partner
+        if not partner:
+            return
+        from ui.dialogs.custom_dialogs import JournalDialog
+        JournalDialog(partner.name, partner.memories, self).exec()
+
+    def on_relax_tonight(self):
+        UIAudio.play_click()
+        if self.state.free_time < 1.0:
+            ConfirmDialog("No Free Time", "You need at least 1.0 hour of Free Time to relax!", self).exec()
+            return
+            
+        rom = self.state.romance
+        partner = rom.partner
+        if not partner:
+            ConfirmDialog("No Partner", "You must have a partner to spend the evening together!", self).exec()
+            return
+            
+        self.state.free_time -= 1.0
+        
+        from player.romance import Memory
+        partner.memories.append(Memory(title="Appreciated a Quiet Evening Together", category="Everyday", emotion="Happy", strength=4.0))
+        partner.trust = min(100.0, partner.trust + 3.0)
+        self.state.personal_fulfillment = min(100.0, self.state.personal_fulfillment + 3.0)
+        
+        UIAudio.play_success()
+        
+        msg = (
+            f"You chose to spend the evening sitting on the porch with {partner.name}, "
+            f"watching the Oakhaven valley lights glow in the distance. No plans, no upgrades. "
+            f"Just a quiet moment together.\n\n(Memory recorded: Appreciated a Quiet Evening Together)"
+        )
+        ConfirmDialog("Relaxed Tonight", msg, self).exec()
+        self.update_hud()
+
     def on_go_date(self):
         p = self.state.player
         rom = self.state.romance
         h = self.state.house
+        
+        if self.state.free_time < 2.0:
+            ConfirmDialog("No Free Time", "You need at least 2.0 hours of Free Time to go on a date!", self).exec()
+            return
+            
         mult = 1.0 + h.get_romance_progress_bonus()
         success, msg, cash_spent, energy_spent = rom.go_on_date(p.cash, p.energy, progress_multiplier=mult)
         if success:
             p.adjust_cash(-cash_spent)
             p.adjust_energy(-energy_spent)
+            self.state.free_time -= 2.0
             self.state.finance.record_transaction("Date", cash_spent, f"Went on date with {rom.partner_name}")
             UIAudio.play_success()
             ConfirmDialog("Date Night", msg, self).exec()
             self.update_hud()
         else:
             ConfirmDialog("Cannot Date", msg, self).exec()
+
+    def on_clean_decor(self):
+        UIAudio.play_click()
+        p = self.state.player
+        r = self.state.restaurant
+        
+        if self.state.free_time < 1.0:
+            ConfirmDialog("No Free Time", "You need at least 1.0 hour of Free Time to restore decor!", self).exec()
+            return
+        if p.cash < 10.0:
+            ConfirmDialog("Insufficient Funds", "You need $10.00 to pay for restoration supplies!", self).exec()
+            return
+        if r.decor_durability >= 100.0:
+            ConfirmDialog("Impeccable Condition", "Your diner decor is already in impeccable shape!", self).exec()
+            return
+            
+        p.adjust_cash(-10.0)
+        self.state.free_time -= 1.0
+        r.decor_durability = min(100.0, r.decor_durability + 25.0)
+        self.state.finance.record_transaction("Maintenance", 10.0, "Diner decor cleanup & paint")
+        
+        UIAudio.play_success()
+        ConfirmDialog("Decor Restored", f"You spent 1 hour cleaning and painting. Decor status is now: {r.decor_status} ({r.decor_durability:.0f}%)", self).exec()
+        self.update_hud()
+
+    def on_retire_clicked(self):
+        UIAudio.play_click()
+        eligible, reasons = self.state.check_retirement_eligibility()
+        if not eligible:
+            reasons_str = "\n".join([f"- {r}" for r in reasons])
+            ConfirmDialog("Cannot Retire", f"You haven't met all stability conditions to retire yet:\n\n{reasons_str}", self).exec()
+            return
+            
+        confirm = ConfirmDialog("Retire & Finish Game", "Are you ready to retire from the diner business and conclude your story?", self)
+        if confirm.exec():
+            self.victory = True
+            self.game_over = True
+            self.show_game_over()
 
     def on_buy_ring(self):
         p = self.state.player
@@ -967,6 +1161,18 @@ class MainWindow(QMainWindow):
             UIAudio.play_notify()
             ConfirmDialog("Relationship Ended", msg, self).exec()
             self.update_hud()
+
+    def on_pay_pardon(self):
+        UIAudio.play_click()
+        p = self.state.player
+        rom = self.state.romance
+        if p.cash >= 500.0:
+            p.adjust_cash(-500.0)
+            rom.caught_cheating = False
+            self.state.finance.record_transaction("Misc", 500.0, "Family Court Pardon Fee paid")
+            self.notification_manager.add_notification("⚖️ Pardon Granted! You are legally allowed to date again.", "success")
+            self.update_hud()
+            self.update_home_sidebar()
 
     def buy_house_upgrade(self, upgrade):
         p = self.state.player
@@ -1030,26 +1236,17 @@ class MainWindow(QMainWindow):
             for note in notifications:
                 self.notification_manager.add_notification(note, "info")
                 
-        # 3. Competitor survival progression check
-        c = self.state.competitor
-        if c.is_active:
-            is_married = self.state.romance.is_co_owner
+        # Trigger weekly newspaper dialog if it's the start of a new week
+        if (self.state.day - 1) % 7 == 0:
+            from ui.dialogs.custom_dialogs import NewspaperDialog
+            NewspaperDialog(self.state, self).exec()
             
-            if (self.state.restaurant.reputation >= 60.0 and 
-                self.state.romance.romance_level >= 80.0 and 
-                is_married):
-                self.days_survived_competitor += 1
-                self.notification_manager.add_notification(
-                    f"Survived rival smear campaign: {self.days_survived_competitor}/10 days", "success"
-                )
-                if self.days_survived_competitor >= 10:
-                    self.victory = True
-                    self.game_over = True
-            else:
-                if self.days_survived_competitor > 0:
-                    self.days_survived_competitor = 0
-                    self.notification_manager.add_notification("Lost survival focus! Smear count reset.", "warning")
-                    
+        # 3. Forced retirement at Day 120 check
+        if self.state.day >= 120:
+            eligible, _ = self.state.check_retirement_eligibility()
+            self.victory = eligible
+            self.game_over = True
+            
         # 4. Game Over conditions check
         p = self.state.player
         if p.cash <= -500.0 or p.energy <= 0 or self.game_over:
@@ -1093,12 +1290,43 @@ class MainWindow(QMainWindow):
         self.shop_name_lbl.setText(f"🏰 {r.name} (Lvl {r.level})")
         self.day_lbl.setText(f"📅 Day {self.state.day} - {self.state.day_name} - {time_str}")
         self.cash_lbl.setText(f"💰 ${p.cash:.2f}")
+        ft = self.state.free_time
+        if ft >= 3.0:
+            self.free_time_lbl.setText("⌛ Relaxed Evening")
+        elif ft >= 2.0:
+            self.free_time_lbl.setText("⌛ Active Evening")
+        elif ft >= 1.0:
+            self.free_time_lbl.setText("⌛ Busy Evening")
+        else:
+            self.free_time_lbl.setText("⌛ Late Night")
         
-        self.energy_bar.setValue(max(0, min(100, int(p.energy))))
-        self.energy_bar.setFormat(f"%v/%m")
+        val_e = max(0, min(100, int(p.energy)))
+        self.energy_bar.setValue(val_e)
+        if val_e >= 80:
+            fmt_e = "Rested"
+        elif val_e >= 50:
+            fmt_e = "Good"
+        elif val_e >= 30:
+            fmt_e = "Tired"
+        elif val_e >= 10:
+            fmt_e = "Exhausted"
+        else:
+            fmt_e = "Collapsing"
+        self.energy_bar.setFormat(fmt_e)
         
-        self.rep_bar.setValue(max(0, min(100, int(r.reputation))))
-        self.rep_bar.setFormat(f"%v/100")
+        val_r = max(0, min(100, int(r.reputation)))
+        self.rep_bar.setValue(val_r)
+        if val_r >= 80:
+            fmt_r = "Town Favorite"
+        elif val_r >= 60:
+            fmt_r = "Well Respected"
+        elif val_r >= 40:
+            fmt_r = "Known Vendor"
+        elif val_r >= 20:
+            fmt_r = "Acquaintance"
+        else:
+            fmt_r = "Outcast"
+        self.rep_bar.setFormat(fmt_r)
         
         partner = rom.partner
         if not partner:

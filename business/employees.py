@@ -10,6 +10,16 @@ class Employee:
     experience: int  # in years
     daily_salary: float
     is_active: bool = True  # Can be disabled if they call in sick
+    is_part_time: bool = False
+    pay_cut_days_left: int = 0
+
+    def get_actual_salary(self, wage_multiplier: float = 1.0) -> float:
+        salary = self.daily_salary
+        if self.is_part_time:
+            salary *= 0.5
+        if self.pay_cut_days_left > 0:
+            salary *= 0.8
+        return round(salary * wage_multiplier, 2)
 
     def roll_attendance(self) -> bool:
         """Determines if the employee shows up today based on reliability.
@@ -79,6 +89,6 @@ class EmployeeSystem:
                 notices.append(f"Notification: {e.name} called in sick today and won't be working.")
         return notices
 
-    def calculate_daily_wages(self) -> float:
+    def calculate_daily_wages(self, wage_multiplier: float = 1.0) -> float:
         """Returns the total wages due for the day (only paid for employees who work)."""
-        return sum(e.daily_salary for e in self.get_active_employees())
+        return sum(e.get_actual_salary(wage_multiplier) for e in self.get_active_employees())

@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt
 
 from engine.state import GameState
 from ui.main_window import MainWindow
-from ui.dialogs.custom_dialogs import OptionsDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, ConfirmDialog, ChoicesDialog, ReceiptDialog, DevSetupDialog
+from ui.dialogs.custom_dialogs import OptionsDialog, PlaceUpgradesDialog, MoneyMgmtDialog, RelationshipMgmtDialog, ConfirmDialog, ChoicesDialog, ReceiptDialog, DevSetupDialog, MindConversationDialog
 
 # Ensure QApplication exists for PySide6 widgets
 @pytest.fixture(scope="session")
@@ -26,6 +26,13 @@ def main_window(qapp, monkeypatch):
     monkeypatch.setattr(MoneyMgmtDialog, "exec", lambda self: True)
     monkeypatch.setattr(RelationshipMgmtDialog, "exec", lambda self: True)
     monkeypatch.setattr(DevSetupDialog, "exec", lambda self: True)
+    
+    # Mock MindConversationDialog selection flow to simulate choosing index 0
+    def mock_mind_dialog_exec(self):
+        # Simulate selecting choice 0 in MindConversationDialog
+        self.on_choice_clicked(self.conv_data["choices"][0])
+        return True
+    monkeypatch.setattr(MindConversationDialog, "exec", mock_mind_dialog_exec)
     
     state = GameState()
     window = MainWindow(state)

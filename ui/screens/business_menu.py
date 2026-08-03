@@ -1,5 +1,5 @@
 # ui/screens/business_menu.py
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget, QScrollArea, QFrame, QListWidget, QListWidgetItem
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTabWidget, QScrollArea, QFrame, QListWidget, QListWidgetItem, QCheckBox
 from PySide6.QtCore import Qt, Signal
 from ui.theme import ThemeManager
 from ui.audio import UIAudio
@@ -24,7 +24,7 @@ class BusinessMenuScreen(QWidget):
         header_layout.addWidget(self.back_btn)
         
         self.title = QLabel("Business Management", self)
-        self.title.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
+        self.title.setStyleSheet(f"font-size: 26px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         header_layout.addWidget(self.title, alignment=Qt.AlignRight)
         main_layout.addLayout(header_layout)
         
@@ -132,7 +132,7 @@ class BusinessMenuScreen(QWidget):
         self.loans_layout.setSpacing(10)
         
         self.loans_lbl = QLabel("Outstanding Loan: $0.00\nDaily Interest: 15% APR\nRequired Minimum Payment: $0.00/day", self)
-        self.loans_lbl.setStyleSheet("font-size: 15px; font-weight: bold; line-height: 1.5;")
+        self.loans_lbl.setStyleSheet("font-size: 20px; font-weight: bold; line-height: 1.5;")
         self.loans_layout.addWidget(self.loans_lbl)
         
         btn_layout = QHBoxLayout()
@@ -159,7 +159,7 @@ class BusinessMenuScreen(QWidget):
         self.mktg_layout.setSpacing(12)
         
         self.mktg_lbl = QLabel("Chef Sebastian is currently inactive.", self)
-        self.mktg_lbl.setStyleSheet("font-size: 15px; font-weight: bold;")
+        self.mktg_lbl.setStyleSheet("font-size: 20px; font-weight: bold;")
         self.mktg_layout.addWidget(self.mktg_lbl)
         
         self.counter_btn = QPushButton("Run Counter-Marketing Campaign (-$40.00)", self)
@@ -287,6 +287,37 @@ class BusinessMenuScreen(QWidget):
                 self.update_ui()
                 self.state_changed.emit()
 
+    def negotiate_pay_cut(self, name: str):
+        UIAudio.play_click()
+        emp = next((e for e in self.state.employees.hired if e.name == name), None)
+        if not emp:
+            return
+            
+        p = self.state.player
+        if p.energy < 10:
+            ConfirmDialog("Cannot Negotiate", "You need at least 10 energy to negotiate a pay cut!", self).exec()
+            return
+            
+        p.adjust_energy(-10)
+        import random
+        if random.random() < 0.75:
+            emp.pay_cut_days_left = 3
+            UIAudio.play_success()
+            ConfirmDialog("Success!", f"{emp.name} accepted a 20% temporary pay cut for the next 3 days due to hard times.", self).exec()
+        else:
+            ConfirmDialog("Rejected", f"{emp.name} politely declined the salary reduction.", self).exec()
+        
+        self.update_ui()
+        self.state_changed.emit()
+
+    def toggle_part_time(self, name: str, checked: bool):
+        UIAudio.play_click()
+        emp = next((e for e in self.state.employees.hired if e.name == name), None)
+        if emp:
+            emp.is_part_time = checked
+            self.update_ui()
+            self.state_changed.emit()
+
     def update_ui(self):
         p = self.state.player
         r = self.state.restaurant
@@ -328,7 +359,7 @@ class BusinessMenuScreen(QWidget):
             name_lbl = QLabel(f"<b>{u.name}</b> (${u.cost:.2f})", self)
             desc_lbl = QLabel(u.description, self)
             desc_lbl.setWordWrap(True)
-            desc_lbl.setStyleSheet("font-size: 12px; color: #555555;")
+            desc_lbl.setStyleSheet("font-size: 17px; color: #555555;")
             u_lbl_layout.addWidget(name_lbl)
             u_lbl_layout.addWidget(desc_lbl)
             
@@ -361,18 +392,38 @@ class BusinessMenuScreen(QWidget):
             emp_layout.setContentsMargins(5, 5, 5, 5)
             
             txt_layout = QVBoxLayout()
-            name_lbl = QLabel(f"<b>{emp.name}</b> (Salary: ${emp.daily_salary:.2f}/day)", self)
+            actual_sal = emp.get_actual_salary()
+            pt_suffix = " (Part-time)" if emp.is_part_time else ""
+            cut_suffix = f" (Pay Cut: {emp.pay_cut_days_left}d left)" if emp.pay_cut_days_left > 0 else ""
+            name_lbl = QLabel(f"<b>{emp.name}</b> (Salary: ${actual_sal:.2f}/day{pt_suffix}{cut_suffix})", self)
             stat_lbl = QLabel(f"Skill: {emp.skill:.2f} | Reliability: {emp.reliability:.2f} | Exp: {emp.experience} yrs", self)
-            stat_lbl.setStyleSheet("font-size: 12px; color: #555555;")
+            stat_lbl.setStyleSheet("font-size: 17px; color: #555555;")
             txt_layout.addWidget(name_lbl)
             txt_layout.addWidget(stat_lbl)
             
             emp_layout.addLayout(txt_layout)
             
+            # Action controls layout
+            ctrl_layout = QHBoxLayout()
+            
+            pt_chk = QCheckBox("Part-time", self)
+            pt_chk.blockSignals(True)
+            pt_chk.setChecked(emp.is_part_time)
+            pt_chk.blockSignals(False)
+            pt_chk.toggled.connect(lambda chk, ename=emp.name: self.toggle_part_time(ename, chk))
+            ctrl_layout.addWidget(pt_chk)
+            
+            cut_btn = QPushButton("Negotiate Pay Cut", self)
+            cut_btn.setEnabled(emp.pay_cut_days_left == 0)
+            cut_btn.clicked.connect(lambda checked=False, ename=emp.name: self.negotiate_pay_cut(ename))
+            ctrl_layout.addWidget(cut_btn)
+            
             fire_btn = QPushButton("Fire", self)
             fire_btn.setObjectName("quit-btn")
             fire_btn.clicked.connect(lambda checked=False, ename=emp.name: self.fire_staff(ename))
-            emp_layout.addWidget(fire_btn, alignment=Qt.AlignRight)
+            ctrl_layout.addWidget(fire_btn)
+            
+            emp_layout.addLayout(ctrl_layout)
             
             item.setSizeHint(emp_widget.sizeHint())
             self.staff_list.addItem(item)
@@ -393,7 +444,7 @@ class BusinessMenuScreen(QWidget):
                 self.counter_btn.setEnabled(False)
                 self.counter_btn.setText("Counter Campaign Active")
             else:
-                self.mktg_lbl.setText(f"Chef Sebastian is actively draining your market share! (-1.0 reputation/day)\nCampaign Counteraction Cost: ${c.marketing_counteraction_cost:.2f}")
+                self.mktg_lbl.setText(f"Chef Sebastian is actively draining your market share and community standing!\nCampaign Counteraction Cost: ${c.marketing_counteraction_cost:.2f}")
                 self.counter_btn.setEnabled(p.cash >= c.marketing_counteraction_cost)
                 self.counter_btn.setText(f"Run Counter-Marketing Campaign (-${c.marketing_counteraction_cost:.1f})")
         else:

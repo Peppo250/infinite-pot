@@ -15,8 +15,9 @@ class PersonalLifeScreen(QWidget):
         
     def paintEvent(self, event):
         painter = QPainter(self)
-        pixmap = QPixmap("assets/images/cottage_bg.jpg")
+        from ui.renderer import SceneComposer
+        pixmap = SceneComposer.compose_house(self.state)
         painter.drawPixmap(self.rect(), pixmap)
         
     def update_ui(self):
-        pass
+        self.update()

@@ -36,7 +36,7 @@ class MainMenuScreen(QWidget):
         self.logo_label = QLabel("🍲  INFINITE POT  🍲", self)
         self.logo_label.setStyleSheet(f"""
             font-family: "{ThemeManager.HEADER_FONT}";
-            font-size: 24px;
+            font-size: 32px;
             font-weight: bold;
             color: {ThemeManager.DARK_BROWN};
             margin-bottom: 5px;
@@ -46,7 +46,7 @@ class MainMenuScreen(QWidget):
         
         self.subtitle = QLabel("Build a Business to Build a Life", self)
         self.subtitle.setStyleSheet(f"""
-            font-size: 22px;
+            font-size: 26px;
             font-style: italic;
             color: {ThemeManager.DARK_CHARCOAL};
             margin-bottom: 40px;
@@ -81,7 +81,7 @@ class MainMenuScreen(QWidget):
         
         # Footer
         self.footer = QLabel("V1 Playable Prototype • Made with PySide6 & Pygame", self)
-        self.footer.setStyleSheet("font-size: 14px; color: #4F3422;")
+        self.footer.setStyleSheet("font-size: 18px; color: #4F3422;")
         self.footer.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.footer)
 

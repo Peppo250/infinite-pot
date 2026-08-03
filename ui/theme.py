@@ -50,7 +50,7 @@ class ThemeManager:
                 background-color: {cls.CREAM};
                 color: {cls.DARK_CHARCOAL};
                 font-family: "{cls.FONT_FAMILY}", "Courier New", monospace;
-                font-size: 20px;
+                font-size: 24px;
             }}
             
             QMainWindow {{
@@ -64,26 +64,26 @@ class ThemeManager:
             
             QLabel#title-label {{
                 font-family: "{cls.HEADER_FONT}", Arial, sans-serif;
-                font-size: 20px;
+                font-size: 26px;
                 font-weight: bold;
                 color: {cls.DARK_BROWN};
                 margin-bottom: 5px;
             }}
             
             QLabel#subtitle-label {{
-                font-size: 16px;
+                font-size: 20px;
                 color: {cls.DARK_BROWN};
                 font-style: italic;
             }}
             
             QLabel#hud-label {{
                 font-weight: bold;
-                font-size: 18px;
+                font-size: 22px;
                 color: {cls.DARK_CHARCOAL};
             }}
             
             QLabel#hud-value {{
-                font-size: 20px;
+                font-size: 24px;
                 font-weight: bold;
                 color: {cls.DARK_BROWN};
             }}
@@ -195,7 +195,7 @@ class ThemeManager:
                 border: 3px solid {cls.DARK_BROWN};
                 border-radius: 0px;
                 padding: 4px;
-                font-size: 18px;
+                font-size: 22px;
                 color: {cls.DARK_CHARCOAL};
             }}
             

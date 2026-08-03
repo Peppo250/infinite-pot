@@ -1067,3 +1067,348 @@ class OptionsDialog(GameDialog):
                 p_win.close()
             else:
                 self.close()
+
+class NewspaperDialog(GameDialog):
+    def __init__(self, state, parent=None):
+        super().__init__("The Oakhaven Chronicle", parent)
+        self.state = state
+        self.resize(450, 480)
+        
+        # Masthead
+        masthead = QFrame(self)
+        masthead.setStyleSheet("border-top: 3px double #1F1717; border-bottom: 3px double #1F1717; margin: 5px 0px; padding: 5px 0px; background: transparent;")
+        mast_lay = QVBoxLayout(masthead)
+        mast_lay.setContentsMargins(0, 5, 0, 5)
+        
+        title_lbl = QLabel("THE OAKHAVEN CHRONICLE", self)
+        title_lbl.setStyleSheet("font-family: 'Georgia', 'Times New Roman', serif; font-size: 26px; font-weight: bold; color: #1F1717; background: transparent; border: none;")
+        title_lbl.setAlignment(Qt.AlignCenter)
+        mast_lay.addWidget(title_lbl)
+        
+        sub_lbl = QLabel(f"Oakhaven Valley | Day {state.day} - Week {state.week} Edition | Price: 1 Copper", self)
+        sub_lbl.setStyleSheet("font-family: 'Georgia', 'Times New Roman', serif; font-size: 11px; font-style: italic; color: #555555; background: transparent; border: none;")
+        sub_lbl.setAlignment(Qt.AlignCenter)
+        mast_lay.addWidget(sub_lbl)
+        
+        self.layout.addWidget(masthead)
+        
+        # Headlines layout
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet("background: transparent; border: none;")
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background: transparent;")
+        scroll_lay = QVBoxLayout(scroll_content)
+        scroll_lay.setSpacing(15)
+        
+        # Build news items
+        news_items = self.generate_news()
+        for idx, item in enumerate(news_items):
+            item_frame = QFrame(self)
+            item_frame.setStyleSheet("border-bottom: 1px dotted #888888; padding-bottom: 10px; background: transparent;")
+            item_lay = QVBoxLayout(item_frame)
+            item_lay.setContentsMargins(0, 0, 0, 0)
+            
+            hdr_lbl = QLabel(f"<b>{item['header']}</b>", self)
+            hdr_lbl.setStyleSheet("font-family: 'Georgia', serif; font-size: 14px; color: #1F1717; background: transparent; border: none;")
+            hdr_lbl.setWordWrap(True)
+            item_lay.addWidget(hdr_lbl)
+            
+            body_lbl = QLabel(item['body'], self)
+            body_lbl.setStyleSheet("font-family: 'Times New Roman', serif; font-size: 12px; color: #333333; line-height: 1.3; background: transparent; border: none;")
+            body_lbl.setWordWrap(True)
+            item_lay.addWidget(body_lbl)
+            
+            scroll_lay.addWidget(item_frame)
+            
+        scroll.setWidget(scroll_content)
+        self.layout.addWidget(scroll)
+        
+        # Read Button
+        read_btn = QPushButton("Fold & Close Newspaper", self)
+        read_btn.setObjectName("primary-action-btn")
+        read_btn.clicked.connect(self.accept)
+        self.layout.addWidget(read_btn)
+        
+    def generate_news(self) -> list[dict]:
+        import random
+        items = []
+        climate = self.state.town.economic_climate
+        c = self.state.competitor
+        r = self.state.restaurant
+        
+        # 1. Weather / Climate news
+        if climate == "Monsoon Week":
+            items.append({
+                "header": "⛈️ WEATHER: MONSOON WEEK GRIPS THE VALLEY!",
+                "body": "Heavy downpours flood the valley. Local utilities report increased cost of operations, and citizens stay warm at home. Standing and customer traffic are affected."
+            })
+        elif climate == "Supply Strike":
+            items.append({
+                "header": "🛠️ ECONOMY: CART REPAIR SUPPLIES HIT BY VALLEY STRIKE",
+                "body": "A local parts strike has caused material and maintenance fees to spike by 25%. Hired staff demand higher daily rates to cope with valley inflation."
+            })
+        elif climate in ["Harvest Festival", "Festival"]:
+            items.append({
+                "header": "🍎 FESTIVAL: ANNUAL HARVEST FESTIVAL BEGINS!",
+                "body": "The harvest festival brings visitors from across the kingdom! Diner traffic is booming, but maintenance costs have slightly increased due to extra waste disposal needs."
+            })
+        elif climate in ["Economic Slowdown", "Recession"]:
+            items.append({
+                "header": "📉 MARKETS: ECONOMIC SLOWDOWN HITS VALLEY ENTERPRISES",
+                "body": "Purse strings are tightening across the region. While employee rates have dropped, customer traffic is lower, and diner owners are urged to plan carefully."
+            })
+        else:
+            items.append({
+                "header": "☀️ CLIMATE: STABLE VALLEY SEASON RETURNS",
+                "body": "Gentle winds and clear skies provide a perfect environment for diner carts and local gatherers. Standard utility and marketing costs apply."
+            })
+            
+        # 2. Competitor news
+        if c.is_active:
+            if c.active_action == "Live Music":
+                items.append({
+                    "header": f"🎻 CULTURE: Bistro Gourmet introduces live ambient music.",
+                    "body": "Guests speak highly of the live ambient acoustics at Bistro Gourmet. Local standing standards have risen, placing competitive pressure on other diners."
+                })
+            elif c.active_action == "Renovation":
+                items.append({
+                    "header": f"🏰 RETAIL: Bistro Gourmet unveils a grand luxury facade.",
+                    "body": "A grand renovation at Bistro Gourmet projects a high-end castle aesthetic. Competitor attraction has increased, drawing attention away from smaller carts."
+                })
+            elif c.active_action == "Marketing":
+                items.append({
+                    "header": f"📢 PUBLICITY: Bistro Gourmet launches advertising blitz.",
+                    "body": "A valley-wide advertising campaign dominates the local news. Bistro Gourmet flyer distributions have significantly offset other local food vendors."
+                })
+            else:
+                items.append({
+                    "header": "👨‍🍳 BUSINESS: CHEF SEBASTIAN SEEN SOURCING SPICES",
+                    "body": "Bistro Gourmet's master chef was seen buying castle spices, sparking rumors of an upcoming gourmet menu revision."
+                })
+        else:
+            items.append({
+                "header": "🌳 NEWS: SILENT WEEKS IN THE VALLEYS",
+                "body": "Quiet days in the municipal square. Gathering associations report record wild berry harvests in the northern woods."
+            })
+            
+        # 3. Player status news
+        if r.reputation >= 70.0:
+            items.append({
+                "header": f"🍲 REVIEWS: '{r.name}' BECOMES LOCAL FAVORITE!",
+                "body": f"Travelers and locals rave about the delicious, infinite food cooked in {r.name}. High community standing is well deserved!"
+            })
+        elif r.reputation < 30.0:
+            items.append({
+                "header": "👀 PUBLIC ADVISORY: DINERS DISCUSS QUALITY OF LOCAL STANDS",
+                "body": "Local community members caution against dining carts with neglected decor or high prices. Cleanliness and fair pricing are key to retaining local goodwill."
+            })
+        else:
+            items.append({
+                "header": "🍳 ENTERPRISE: FOOD CARTS REMAIN THE VALLEY'S LIFEBLOOD",
+                "body": "Local independent kitchens continue to supply reliable, warm food to hard-working valley residents day in and day out."
+            })
+            
+        # 4. Funny filler news item
+        filler = random.choice([
+            {"header": "🐄 CHRONICLE: FARMER TED'S COW RETURNS", "body": "Ted's prize-winning cow, Buttercup, escaped yesterday afternoon. She was found asleep in the local bakery garden and has returned home."},
+            {"header": "✨ SCROLLS: ANCIENT MYTHS OF BOTTOMLESS POTS", "body": "Scholars at the library uncovered a manuscript detailing magical cooking vessels that cook unlimited food. Local citizens dismiss it as ancient folklore."},
+            {"header": "🐟 FISHING: TROUT RUN FORECASTED", "body": "Anglers report high river volumes in the eastern delta. Expect fresh fish vendors to flood the local markets next week."}
+        ])
+        items.append(filler)
+        
+        return items
+
+class JournalDialog(GameDialog):
+    def __init__(self, partner_name: str, memories: list, parent=None):
+        super().__init__("Our Story", parent)
+        self.resize(420, 480)
+        
+        # Header
+        lbl_title = QLabel(f"📖 Our Story with {partner_name}", self)
+        lbl_title.setStyleSheet("font-family: 'Georgia', serif; font-size: 20px; font-weight: bold; color: #1F1717; margin-bottom: 5px; background: transparent; border: none;")
+        lbl_title.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(lbl_title)
+        
+        divider = QFrame(self)
+        divider.setStyleSheet("border-bottom: 2px solid #5B3923; margin-bottom: 10px; background: transparent;")
+        self.layout.addWidget(divider)
+        
+        # Scroll log
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setStyleSheet("background: transparent; border: none;")
+        scroll_content = QWidget()
+        scroll_content.setStyleSheet("background: transparent;")
+        scroll_lay = QVBoxLayout(scroll_content)
+        scroll_lay.setSpacing(10)
+        scroll_lay.setContentsMargins(5, 5, 5, 5)
+        
+        if not memories:
+            lbl_empty = QLabel("<i>No memories recorded yet. Start socializing to build a shared history!</i>", self)
+            lbl_empty.setStyleSheet("background: transparent; border: none; font-size: 13px; color: #555555;")
+            lbl_empty.setWordWrap(True)
+            scroll_lay.addWidget(lbl_empty)
+        else:
+            for mem in memories:
+                f = QFrame(self)
+                f.setStyleSheet("border: 1px solid #D2E0FB; border-radius: 4px; padding: 6px; background-color: rgba(255, 255, 255, 0.7);")
+                fl = QVBoxLayout(f)
+                fl.setSpacing(2)
+                
+                cat_colors = {
+                    "Date": "#4E9F3D",
+                    "Milestone": "#1F4068",
+                    "Difficult": "#E25E3E",
+                    "Everyday": "#8D6240"
+                }
+                color = cat_colors.get(mem.category, "#555555")
+                
+                lbl_hdr = QLabel(f"<b>{mem.title}</b> <font size='2' color='{color}'>[{mem.category}]</font>", self)
+                lbl_hdr.setStyleSheet("font-size: 13px; color: #1F1717; background: transparent; border: none;")
+                fl.addWidget(lbl_hdr)
+                
+                lbl_desc = QLabel(f"Emotion: <b>{mem.emotion}</b> | Age: {mem.age} days ago | Strength: {mem.strength:.1f}/10.0", self)
+                lbl_desc.setStyleSheet("font-size: 11px; color: #666666; background: transparent; border: none;")
+                fl.addWidget(lbl_desc)
+                
+                scroll_lay.addWidget(f)
+                
+        scroll.setWidget(scroll_content)
+        self.layout.addWidget(scroll)
+        
+        # Close button
+        btn_close = QPushButton("Close Journal", self)
+        btn_close.setObjectName("primary-action-btn")
+        btn_close.clicked.connect(self.accept)
+        self.layout.addWidget(btn_close)
+
+class MindConversationDialog(GameDialog):
+    def __init__(self, girl, state, parent=None):
+        super().__init__(f"Conversation with {girl.name} ({girl.archetype})", parent)
+        self.resize(600, 680)
+        self.girl = girl
+        self.state = state
+        self.mind = girl.mind
+        
+        # Generate initial conversation data
+        self.conv_data = self.mind.generate_conversation(state)
+        
+        self.speech_lbl = QLabel(self)
+        self.speech_lbl.setWordWrap(True)
+        self.speech_lbl.setStyleSheet("font-size: 18px; color: #3C2A21; line-height: 1.4; padding: 10px; background-color: rgba(255, 255, 255, 0.4); border-radius: 8px;")
+        self.speech_lbl.setText(self.conv_data["dialogue"])
+        self.layout.addWidget(self.speech_lbl)
+        
+        # Layout for choices
+        self.choices_widget = QWidget(self)
+        self.choices_layout = QVBoxLayout(self.choices_widget)
+        self.choices_layout.setContentsMargins(0, 0, 0, 0)
+        self.choices_layout.setSpacing(10)
+        
+        for choice in self.conv_data["choices"]:
+            btn_txt = f"[{choice['intent']}] {choice['text']}"
+            btn = QPushButton(btn_txt, self)
+            btn.setObjectName("choice-btn")
+            btn.setStyleSheet(f"""
+                QPushButton#choice-btn {{
+                    text-align: left;
+                    padding: 12px;
+                    font-size: 16px;
+                    border: 2px solid {ThemeManager.DARK_BROWN};
+                    background-color: white;
+                }}
+                QPushButton#choice-btn:hover {{
+                    background-color: {ThemeManager.WARM_BEIGE};
+                }}
+            """)
+            btn.clicked.connect(lambda chk=False, c=choice: self.on_choice_clicked(c))
+            self.choices_layout.addWidget(btn)
+            
+        self.layout.addWidget(self.choices_widget)
+        
+        # Reaction Panel (hidden initially)
+        self.reaction_widget = QWidget(self)
+        self.reaction_layout = QVBoxLayout(self.reaction_widget)
+        self.reaction_layout.setContentsMargins(0, 0, 0, 0)
+        self.reaction_layout.setSpacing(10)
+        
+        self.reaction_lbl = QLabel(self)
+        self.reaction_lbl.setWordWrap(True)
+        self.reaction_lbl.setStyleSheet("font-size: 18px; font-style: italic; color: #4E3629;")
+        self.reaction_layout.addWidget(self.reaction_lbl)
+        
+        # Stats layout
+        stats_frame = QFrame(self)
+        stats_frame.setStyleSheet("background-color: #FDFBF7; border: 1.5px solid #D5C29D; padding: 8px;")
+        stats_lay = QVBoxLayout(stats_frame)
+        stats_lay.setSpacing(4)
+        
+        self.trust_lbl = QLabel("Trust: 40.0", self)
+        self.trust_lbl.setStyleSheet("font-size: 15px; font-weight: bold;")
+        stats_lay.addWidget(self.trust_lbl)
+        
+        self.comfort_lbl = QLabel("Comfort: 40.0", self)
+        self.comfort_lbl.setStyleSheet("font-size: 15px; font-weight: bold;")
+        stats_lay.addWidget(self.comfort_lbl)
+        
+        self.respect_lbl = QLabel("Respect: 40.0", self)
+        self.respect_lbl.setStyleSheet("font-size: 15px; font-weight: bold;")
+        stats_lay.addWidget(self.respect_lbl)
+        
+        self.romance_lbl = QLabel("Romance Level: 40.0", self)
+        self.romance_lbl.setStyleSheet("font-size: 16px; font-weight: bold; color: #B35446;")
+        stats_lay.addWidget(self.romance_lbl)
+        self.reaction_layout.addWidget(stats_frame)
+        
+        # Secret Internal Monologue box
+        self.monologue_box = QFrame(self)
+        self.monologue_box.setStyleSheet("background-color: #F4EAE1; border-left: 5px solid #8B5E3C; padding: 10px;")
+        mono_lay = QVBoxLayout(self.monologue_box)
+        mono_hdr = QLabel("<b>💭 Her Secret Internal Monologue</b>", self)
+        mono_hdr.setStyleSheet("font-size: 14px; color: #5C3A21;")
+        self.mono_text = QLabel(self)
+        self.mono_text.setWordWrap(True)
+        self.mono_text.setStyleSheet("font-style: italic; font-size: 15px; color: #4E3629;")
+        mono_lay.addWidget(mono_hdr)
+        mono_lay.addWidget(self.mono_text)
+        self.reaction_layout.addWidget(self.monologue_box)
+        
+        self.ok_btn = QPushButton("Continue", self)
+        self.ok_btn.setObjectName("primary-action-btn")
+        self.ok_btn.clicked.connect(self.accept)
+        self.reaction_layout.addWidget(self.ok_btn)
+        
+        self.reaction_widget.setVisible(False)
+        self.layout.addWidget(self.reaction_widget)
+        
+        # Cancel / Back Button (Initial state)
+        self.cancel_btn = QPushButton("Walk Away", self)
+        self.cancel_btn.clicked.connect(self.reject)
+        self.layout.addWidget(self.cancel_btn)
+
+    def on_choice_clicked(self, choice):
+        self.choices_widget.setVisible(False)
+        self.cancel_btn.setVisible(False)
+        
+        # Process the reply in the NPC mind
+        outcome = self.mind.process_reply(choice["intent"], choice["promise"], self.state)
+        
+        # Update character stats
+        self.girl.trust = outcome["trust"]
+        self.girl.compatibility = outcome["comfort"] # sync friendship
+        
+        self.reaction_lbl.setText(outcome["reaction"])
+        self.trust_lbl.setText(f"Trust: {outcome['trust']:.1f}")
+        self.comfort_lbl.setText(f"Comfort: {outcome['comfort']:.1f}")
+        self.respect_lbl.setText(f"Respect: {outcome['respect']:.1f}")
+        self.romance_lbl.setText(f"Romance Level: {outcome['romance']:.1f}")
+        
+        # Display latest secret thought entry
+        latest_thought = self.mind.internal_monologue[-1] if self.mind.internal_monologue else "No thoughts recorded."
+        self.mono_text.setText(f'"{latest_thought}"')
+        
+        self.reaction_widget.setVisible(True)
+        UIAudio.play_success()

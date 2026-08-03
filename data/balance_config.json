@@ -1,6 +1,6 @@
 {
   "player": {
-    "starting_cash": 0.0,
+    "starting_cash": 100.0,
     "starting_energy": 100.0,
     "daily_energy_cost": 15.0,
     "work_energy_cost_per_hour": 5.0,
@@ -8,88 +8,145 @@
   },
   "restaurant_levels": {
     "0": {
-      "name": "Street Peddler (Magical Pot Only)",
+      "name": "Street Vendor",
       "upgrade_cost": 0.0,
       "daily_maintenance": 0.0,
-      "customer_capacity": 12,
+      "customer_capacity": 10,
       "max_employees": 0,
       "price_per_meal_range": [2.5, 4.0],
       "base_attraction": 0.5
     },
     "1": {
-      "name": "Second-Hand Roadside Cart",
-      "upgrade_cost": 100.0,
-      "daily_maintenance": 5.0,
-      "customer_capacity": 20,
+      "name": "Used Food Cart",
+      "upgrade_cost": 150.0,
+      "daily_maintenance": 8.0,
+      "customer_capacity": 18,
       "max_employees": 0,
-      "price_per_meal_range": [3.5, 6.0],
+      "price_per_meal_range": [4.0, 6.5],
       "base_attraction": 0.55
     },
     "2": {
-      "name": "Own Roadside Cart",
-      "upgrade_cost": 300.0,
-      "daily_maintenance": 25.0,
-      "customer_capacity": 32,
+      "name": "Independent Food Cart",
+      "upgrade_cost": 400.0,
+      "daily_maintenance": 20.0,
+      "customer_capacity": 28,
       "max_employees": 0,
-      "price_per_meal_range": [5.0, 9.0],
+      "price_per_meal_range": [6.0, 10.0],
       "base_attraction": 0.6
     },
     "3": {
-      "name": "Edge-of-Town Shop",
-      "upgrade_cost": 900.0,
-      "daily_maintenance": 80.0,
-      "customer_capacity": 50,
+      "name": "Edge Shop",
+      "upgrade_cost": 1200.0,
+      "daily_maintenance": 70.0,
+      "customer_capacity": 45,
       "max_employees": 1,
-      "price_per_meal_range": [8.0, 14.0],
+      "price_per_meal_range": [10.0, 18.0],
       "base_attraction": 0.7
     },
     "4": {
       "name": "Town Restaurant",
-      "upgrade_cost": 2500.0,
-      "daily_maintenance": 220.0,
-      "customer_capacity": 90,
+      "upgrade_cost": 3200.0,
+      "daily_maintenance": 180.0,
+      "customer_capacity": 80,
       "max_employees": 3,
-      "price_per_meal_range": [12.0, 26.0],
+      "price_per_meal_range": [16.0, 32.0],
       "base_attraction": 0.8
     }
   },
   "upgrades": {
     "business": [
       {
+        "id": "beverage_station",
+        "name": "Beverage Station",
+        "cost": 75.0,
+        "attraction_bonus": 0.05,
+        "daily_maintenance": 1.0,
+        "min_level": 1,
+        "description": "Serve refreshing home-made teas. Adds +$1.50 spending per customer.",
+        "extra_spend_bonus": 1.50,
+        "time_saved_bonus": 0.0
+      },
+      {
+        "id": "self_service_fountain",
+        "name": "Self-Service Drink Fountain",
+        "cost": 120.0,
+        "attraction_bonus": 0.02,
+        "daily_maintenance": 1.0,
+        "min_level": 2,
+        "description": "Customers pour their own drinks. Saves 0.5 hours of Free Time daily.",
+        "extra_spend_bonus": 0.0,
+        "time_saved_bonus": 0.5
+      },
+      {
+        "id": "industrial_dishwasher",
+        "name": "Industrial Dishwasher",
+        "cost": 250.0,
+        "attraction_bonus": 0.0,
+        "daily_maintenance": 2.0,
+        "min_level": 3,
+        "description": "A heavy-duty washer. Saves 1.0 hour of Free Time daily.",
+        "extra_spend_bonus": 0.0,
+        "time_saved_bonus": 1.0
+      },
+      {
+        "id": "auto_inventory",
+        "name": "Automatic Inventory System",
+        "cost": 150.0,
+        "attraction_bonus": 0.0,
+        "daily_maintenance": 1.5,
+        "min_level": 3,
+        "description": "Automates ordering and prep. Saves 0.5 hours of Free Time daily.",
+        "extra_spend_bonus": 0.0,
+        "time_saved_bonus": 0.5
+      },
+      {
+        "id": "dessert_cabinet",
+        "name": "Dessert Cabinet",
+        "cost": 350.0,
+        "attraction_bonus": 0.06,
+        "daily_maintenance": 4.0,
+        "min_level": 3,
+        "description": "Display fresh sweet treats. Adds +$3.00 spending per customer.",
+        "extra_spend_bonus": 3.00,
+        "time_saved_bonus": 0.0
+      },
+      {
+        "id": "appetizer_bar",
+        "name": "Appetizer Bar",
+        "cost": 600.0,
+        "attraction_bonus": 0.08,
+        "daily_maintenance": 6.0,
+        "min_level": 4,
+        "description": "Offer small starting platters. Adds +$4.50 spending per customer.",
+        "extra_spend_bonus": 4.50,
+        "time_saved_bonus": 0.0
+      },
+      {
         "id": "neon_sign",
         "name": "Neon Sign",
-        "cost": 150.0,
-        "attraction_bonus": 0.05,
-        "daily_maintenance": 2.0,
+        "cost": 180.0,
+        "attraction_bonus": 0.06,
+        "daily_maintenance": 2.5,
         "min_level": 3,
         "description": "A flashy neon sign that draws in late-night passersby."
       },
       {
-        "id": "comfy_chairs",
+        "id": "fancy_seats",
         "name": "Comfortable Chairs",
         "cost": 300.0,
         "attraction_bonus": 0.08,
-        "daily_maintenance": 4.0,
+        "daily_maintenance": 3.0,
         "min_level": 3,
         "description": "Higher quality seating that keeps customers comfortable and happy."
       },
       {
-        "id": "background_music",
+        "id": "live_music",
         "name": "Live Acoustic Setup",
-        "cost": 500.0,
+        "cost": 700.0,
         "attraction_bonus": 0.12,
-        "daily_maintenance": 10.0,
+        "daily_maintenance": 12.0,
         "min_level": 4,
-        "description": "Hires a local musician or plays soft jazz to elevate the atmosphere."
-      },
-      {
-        "id": "fancy_pot_stand",
-        "name": "Gilded Pot Stand",
-        "cost": 800.0,
-        "attraction_bonus": 0.18,
-        "daily_maintenance": 5.0,
-        "min_level": 4,
-        "description": "Showcase your magical pot on a majestic gilded stand, sparking curiosity."
+        "description": "Hires a local musician to elevate the atmosphere."
       }
     ],
     "house": [
@@ -123,7 +180,7 @@
         "cost": 2500.0,
         "energy_recovery_bonus": 15.0,
         "romance_progress_bonus": 0.0,
-        "description": "A custom state-of-the-art kitchen for cooking gourmet meals, adding +15 energy recovery per night."
+        "description": "A custom home kitchen setup. Adds a +20% romance speed boost on all home-held dates."
       },
       {
         "id": "backyard_greenhouse",
@@ -131,7 +188,7 @@
         "cost": 3500.0,
         "energy_recovery_bonus": 0.0,
         "romance_progress_bonus": 0.20,
-        "description": "A beautiful scenic greenhouse that provides a +20% romance speed boost on all dates."
+        "description": "A beautiful scenic greenhouse. Lowers overnight stress level by 15%."
       },
       {
         "id": "study_library",
@@ -152,13 +209,13 @@
     ]
   },
   "house_purchase": {
-    "cost": 2500.0,
-    "daily_maintenance": 15.0,
+    "cost": 3500.0,
+    "daily_maintenance": 20.0,
     "description": "A charming cottage on the edge of town, symbol of a stable personal life."
   },
   "loans": {
     "max_loan_ratio": 0.5,
-    "annual_interest_rate": 0.10,
+    "annual_interest_rate": 0.15,
     "minimum_payment_percentage": 0.05
   },
   "employee_pool": [
@@ -167,28 +224,28 @@
       "skill": 0.4,
       "reliability": 0.8,
       "experience": 1,
-      "daily_salary": 25.0
+      "daily_salary": 30.0
     },
     {
       "name": "Jordan",
       "skill": 0.6,
       "reliability": 0.9,
       "experience": 2,
-      "daily_salary": 45.0
+      "daily_salary": 50.0
     },
     {
       "name": "Taylor",
       "skill": 0.8,
       "reliability": 0.7,
       "experience": 3,
-      "daily_salary": 65.0
+      "daily_salary": 75.0
     },
     {
       "name": "Morgan",
-      "skill": 0.9,
+      "skill": 0.95,
       "reliability": 0.95,
       "experience": 5,
-      "daily_salary": 100.0
+      "daily_salary": 115.0
     }
   ],
   "romance": {
