@@ -12,7 +12,6 @@ class MainMenuScreen(QWidget):
         super().__init__(parent)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(50, 50, 50, 50)
-        layout.setAlignment(Qt.AlignCenter)
         
         # Style Main Menu with retro pixel background
         self.setStyleSheet(f"""
@@ -32,6 +31,9 @@ class MainMenuScreen(QWidget):
             }}
         """)
         
+        # Add top stretch to push content down
+        layout.addStretch()
+        
         # Logo / Title
         self.logo_label = QLabel("🍲  INFINITE POT  🍲", self)
         self.logo_label.setStyleSheet(f"""
@@ -42,7 +44,7 @@ class MainMenuScreen(QWidget):
             margin-bottom: 5px;
         """)
         self.logo_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.logo_label)
+        layout.addWidget(self.logo_label, alignment=Qt.AlignCenter)
         
         self.subtitle = QLabel("Build a Business to Build a Life", self)
         self.subtitle.setStyleSheet(f"""
@@ -52,7 +54,7 @@ class MainMenuScreen(QWidget):
             margin-bottom: 40px;
         """)
         self.subtitle.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.subtitle)
+        layout.addWidget(self.subtitle, alignment=Qt.AlignCenter)
         
         # Menu options
         self.new_game_btn = QPushButton("Start Culinary Journey", self)
@@ -76,14 +78,14 @@ class MainMenuScreen(QWidget):
         self.quit_btn.clicked.connect(self.on_quit_clicked)
         layout.addWidget(self.quit_btn, alignment=Qt.AlignCenter)
         
-        # Spacer
-        layout.addItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        # Add bottom stretch to separate menu block and footer
+        layout.addStretch()
         
         # Footer
         self.footer = QLabel("V1 Playable Prototype • Made with PySide6 & Pygame", self)
-        self.footer.setStyleSheet("font-size: 18px; color: #4F3422;")
+        self.footer.setStyleSheet(f"font-size: 18px; color: {ThemeManager.DARK_BROWN};")
         self.footer.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.footer)
+        layout.addWidget(self.footer, alignment=Qt.AlignCenter)
 
         # Credits display state
         self.credits_showing = False

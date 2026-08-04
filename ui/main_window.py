@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
         self.energy_bar = QProgressBar(self)
         self.energy_bar.setRange(0, 100)
         self.energy_bar.setMaximumWidth(120)
-        self.energy_bar.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
+        self.energy_bar.setStyleSheet(f"QProgressBar::chunk {{ background-color: {ThemeManager.ORANGE_ALERT}; }}")
         energy_layout.addWidget(e_lbl)
         energy_layout.addWidget(self.energy_bar)
         hud_layout.addWidget(energy_widget)
@@ -189,8 +189,8 @@ class MainWindow(QMainWindow):
         r_lbl.setStyleSheet(f"font-size: 20px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
         self.rep_bar = QProgressBar(self)
         self.rep_bar.setRange(0, 100)
-        self.rep_bar.setMaximumWidth(120)
-        self.rep_bar.setStyleSheet("QProgressBar::chunk { background-color: #82A0D8; }")
+        self.rep_bar.setMaximumWidth(200)
+        self.rep_bar.setStyleSheet(f"QProgressBar::chunk {{ background-color: {ThemeManager.BLUE_INFO}; }}")
         rep_layout.addWidget(r_lbl)
         rep_layout.addWidget(self.rep_bar)
         hud_layout.addWidget(rep_widget)
@@ -269,7 +269,12 @@ class MainWindow(QMainWindow):
         self.update_hud()
 
     def show_business(self):
-        self.open_place_upgrades()
+        UIAudio.play_click()
+        self.hud_bar.setVisible(True)
+        self.sidebar_widget.setVisible(False)
+        self.place_log_frame.setVisible(False)
+        self.stacked_widget.setCurrentIndex(2)
+        self.business_screen.update_ui()
 
     def show_personal_life(self):
         self.current_place = "Home"
@@ -433,13 +438,9 @@ class MainWindow(QMainWindow):
         self.stop_btn.setVisible(False)
         rest_lay.addWidget(self.stop_btn)
         
-        self.upgrades_btn = QPushButton("Place Mgmt", self)
-        self.upgrades_btn.clicked.connect(self.open_place_upgrades)
-        rest_lay.addWidget(self.upgrades_btn)
-        
-        self.money_btn = QPushButton("Money Mgmt", self)
-        self.money_btn.clicked.connect(self.open_money_mgmt)
-        rest_lay.addWidget(self.money_btn)
+        self.business_btn = QPushButton("💼 Manage Business", self)
+        self.business_btn.clicked.connect(self.show_business)
+        rest_lay.addWidget(self.business_btn)
         
         self.rel_btn = QPushButton("Relationship Mgmt", self)
         self.rel_btn.clicked.connect(self.open_relationship_mgmt)
@@ -508,7 +509,7 @@ class MainWindow(QMainWindow):
         self.home_story_btn.clicked.connect(self.on_view_story_clicked)
         home_lay.addWidget(self.home_story_btn)
         
-        self.home_date_btn = QPushButton("💖 Go on a Date (-$100 | 25 E)", self)
+        self.home_date_btn = QPushButton(f"💖 Go on a Date (-${self.state.romance.date_cost:.0f} | {self.state.romance.energy_cost_for_date:.0f} E)", self)
         self.home_date_btn.clicked.connect(self.on_go_date)
         home_lay.addWidget(self.home_date_btn)
         
@@ -557,7 +558,7 @@ class MainWindow(QMainWindow):
         self.decor_status_lbl.setStyleSheet("font-size: 16px;")
         home_lay.addWidget(self.decor_status_lbl)
         
-        self.home_clean_decor_btn = QPushButton("🧼 Clean & Paint Diner (-$10 | 1h)", self)
+        self.home_clean_decor_btn = QPushButton("🧼 Clean && Paint Diner (-$10 | 1h)", self)
         self.home_clean_decor_btn.clicked.connect(self.on_clean_decor)
         home_lay.addWidget(self.home_clean_decor_btn)
         
@@ -575,7 +576,7 @@ class MainWindow(QMainWindow):
         self.home_retire_btn.clicked.connect(self.on_retire_clicked)
         home_lay.addWidget(self.home_retire_btn)
         
-        self.home_sleep_btn = QPushButton("🛌 Sleep & End Day", self)
+        self.home_sleep_btn = QPushButton("🛌 Sleep && End Day", self)
         self.home_sleep_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
         self.home_sleep_btn.clicked.connect(self.on_sleep_and_end_day)
         home_lay.addWidget(self.home_sleep_btn)
@@ -678,8 +679,8 @@ class MainWindow(QMainWindow):
         dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
         dlg.exec()
         
-        # Main button becomes Sleep & End Day
-        self.sim_btn.setText("Sleep & End Day")
+        # Main button becomes Sleep && End Day
+        self.sim_btn.setText("Sleep && End Day")
         self.sim_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
         self.notification_manager.add_notification(f"Workday stopped after {self.active_hours_passed} hours. Evening phase started.", "info")
         self.update_hud()
@@ -731,7 +732,7 @@ class MainWindow(QMainWindow):
             dlg = ReceiptDialog(self.state.finance.get_daily_report(), self)
             dlg.exec()
             
-            self.sim_btn.setText("Sleep & End Day")
+            self.sim_btn.setText("Sleep && End Day")
             self.sim_btn.setStyleSheet("font-weight: bold; background-color: #82A0D8;")
             self.update_hud()
             return
@@ -891,7 +892,8 @@ class MainWindow(QMainWindow):
                     f"Last Shared Memory: <b>{last_mem_str}</b>"
                 )
                 self.home_story_btn.setEnabled(True)
-                self.home_date_btn.setEnabled(p.cash >= 100.0 and p.energy >= 25)
+                self.home_date_btn.setText(f"💖 Go on a Date (-${rom.date_cost:.0f} | {rom.energy_cost_for_date:.0f} E)")
+                self.home_date_btn.setEnabled(p.cash >= rom.date_cost and p.energy >= rom.energy_cost_for_date)
                 self.home_relax_btn.setEnabled(self.state.free_time >= 1.0)
                 self.home_ring_btn.setEnabled(not rom.has_ring and p.cash >= 2500.0)
                 self.home_propose_btn.setEnabled(rom.has_ring and not rom.is_co_owner and rom.romance_level >= 75)

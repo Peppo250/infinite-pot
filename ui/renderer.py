@@ -2,6 +2,7 @@ import os
 import random
 from PySide6.QtGui import QPixmap, QPainter, QColor, QLinearGradient, QRadialGradient, QBrush, QPen, QFont
 from PySide6.QtCore import Qt, QPoint, QRect
+from ui.theme import ThemeManager
 
 class EnvironmentRenderer:
     @staticmethod
@@ -73,7 +74,7 @@ class BuildingRenderer:
         custom_name = r.name
         
         # Base settings
-        painter.setPen(QPen(QColor("#1F1717"), 3))
+        painter.setPen(QPen(QColor(ThemeManager.DARK_OUTLINE), 3))
         font = QFont("Georgia", 11, QFont.Bold)
         painter.setFont(font)
         

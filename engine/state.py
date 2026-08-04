@@ -72,17 +72,108 @@ class GameState:
         except Exception:
             # Fallback to minimal default config
             return {
-                "player": {"starting_cash": 100.0, "starting_energy": 100.0},
-                "restaurant_levels": {
-                    "1": {"name": "Roadside Cart", "upgrade_cost": 0.0, "daily_maintenance": 5.0, "customer_capacity": 10, "max_employees": 0, "price_per_meal_range": [3, 6], "base_attraction": 0.3},
-                    "2": {"name": "Edge Shop", "upgrade_cost": 200.0, "daily_maintenance": 15.0, "customer_capacity": 25, "max_employees": 1, "price_per_meal_range": [5, 9], "base_attraction": 0.5},
-                    "3": {"name": "Restaurant", "upgrade_cost": 1000.0, "daily_maintenance": 60.0, "customer_capacity": 60, "max_employees": 3, "price_per_meal_range": [10, 20], "base_attraction": 0.7}
+                "player": {
+                    "starting_cash": 100.0,
+                    "starting_energy": 100.0,
+                    "daily_energy_cost": 15.0,
+                    "work_energy_cost_per_hour": 5.0,
+                    "sleep_energy_recovery": 75.0
                 },
-                "upgrades": {"business": [], "house": []},
-                "house_purchase": {"cost": 2500.0, "daily_maintenance": 20.0},
-                "loans": {"annual_interest_rate": 0.15, "max_loan_ratio": 0.5},
-                "romance": {"date_cost": 75.0, "energy_cost_for_date": 20.0},
-                "competitor": {"base_marketing_budget": 40.0, "base_market_share_drain": 0.12}
+                "restaurant_levels": {
+                    "0": {
+                        "name": "Street Vendor",
+                        "upgrade_cost": 0.0,
+                        "daily_maintenance": 0.0,
+                        "customer_capacity": 10,
+                        "max_employees": 0,
+                        "price_per_meal_range": [2.5, 4.0],
+                        "base_attraction": 0.6
+                    },
+                    "1": {
+                        "name": "Used Food Cart",
+                        "upgrade_cost": 150.0,
+                        "daily_maintenance": 8.0,
+                        "customer_capacity": 18,
+                        "max_employees": 0,
+                        "price_per_meal_range": [4.0, 6.5],
+                        "base_attraction": 0.55
+                    },
+                    "2": {
+                        "name": "Independent Food Cart",
+                        "upgrade_cost": 400.0,
+                        "daily_maintenance": 20.0,
+                        "customer_capacity": 28,
+                        "max_employees": 0,
+                        "price_per_meal_range": [6.0, 10.0],
+                        "base_attraction": 0.6
+                    },
+                    "3": {
+                        "name": "Edge Shop",
+                        "upgrade_cost": 1200.0,
+                        "daily_maintenance": 70.0,
+                        "customer_capacity": 45,
+                        "max_employees": 1,
+                        "price_per_meal_range": [10.0, 18.0],
+                        "base_attraction": 0.7
+                    },
+                    "4": {
+                        "name": "Town Restaurant",
+                        "upgrade_cost": 3200.0,
+                        "daily_maintenance": 180.0,
+                        "customer_capacity": 80,
+                        "max_employees": 3,
+                        "price_per_meal_range": [16.0, 32.0],
+                        "base_attraction": 0.8
+                    }
+                },
+                "upgrades": {
+                    "business": [
+                        {"id": "beverage_station", "name": "Beverage Station", "cost": 75.0, "attraction_bonus": 0.05, "daily_maintenance": 1.0, "min_level": 1, "description": "Serve refreshing home-made teas. Adds +$1.50 spending per customer.", "extra_spend_bonus": 1.50, "time_saved_bonus": 0.0},
+                        {"id": "self_service_fountain", "name": "Self-Service Drink Fountain", "cost": 120.0, "attraction_bonus": 0.02, "daily_maintenance": 1.0, "min_level": 2, "description": "Customers pour their own drinks. Saves 0.5 hours of Free Time daily.", "extra_spend_bonus": 0.0, "time_saved_bonus": 0.5},
+                        {"id": "industrial_dishwasher", "name": "Industrial Dishwasher", "cost": 250.0, "attraction_bonus": 0.0, "daily_maintenance": 2.0, "min_level": 3, "description": "A heavy-duty washer. Saves 1.0 hour of Free Time daily.", "extra_spend_bonus": 0.0, "time_saved_bonus": 1.0},
+                        {"id": "auto_inventory", "name": "Automatic Inventory System", "cost": 150.0, "attraction_bonus": 0.0, "daily_maintenance": 1.5, "min_level": 3, "description": "Automates ordering and prep. Saves 0.5 hours of Free Time daily.", "extra_spend_bonus": 0.0, "time_saved_bonus": 0.5},
+                        {"id": "dessert_cabinet", "name": "Dessert Cabinet", "cost": 350.0, "attraction_bonus": 0.06, "daily_maintenance": 4.0, "min_level": 3, "description": "Display fresh sweet treats. Adds +$3.00 spending per customer.", "extra_spend_bonus": 3.00, "time_saved_bonus": 0.0},
+                        {"id": "appetizer_bar", "name": "Appetizer Bar", "cost": 600.0, "attraction_bonus": 0.08, "daily_maintenance": 6.0, "min_level": 4, "description": "Offer small starting platters. Adds +$4.50 spending per customer.", "extra_spend_bonus": 4.50, "time_saved_bonus": 0.0},
+                        {"id": "neon_sign", "name": "Neon Sign", "cost": 180.0, "attraction_bonus": 0.06, "daily_maintenance": 2.5, "min_level": 3, "description": "A flashy neon sign that draws in late-night passersby."},
+                        {"id": "fancy_seats", "name": "Comfortable Chairs", "cost": 300.0, "attraction_bonus": 0.08, "daily_maintenance": 3.0, "min_level": 3, "description": "Higher quality seating that keeps customers comfortable and happy."},
+                        {"id": "live_music", "name": "Live Acoustic Setup", "cost": 700.0, "attraction_bonus": 0.12, "daily_maintenance": 12.0, "min_level": 4, "description": "Hires a local musician to elevate the atmosphere."},
+                        {"id": "super_cooker", "name": "Magical Super Cooker Extension", "cost": 500.0, "attraction_bonus": 0.05, "daily_maintenance": 5.0, "min_level": 3, "description": "Unlocks hidden heat dimensions in the Infinite Pot, extending customer capacity limit by +30.", "extra_spend_bonus": 0.0, "time_saved_bonus": 0.0},
+                        {"id": "sebastian_recipes", "name": "Sebastian's Secret Recipes", "cost": 800.0, "attraction_bonus": 0.10, "daily_maintenance": 8.0, "min_level": 4, "description": "A collection of gourmet spice blends and cooking secrets that raises price ceiling by +$5.00.", "extra_spend_bonus": 0.0, "time_saved_bonus": 0.0}
+                    ],
+                    "house": [
+                        {"id": "cozy_couch", "name": "Cozy Couch", "cost": 400.0, "energy_recovery_bonus": 10.0, "romance_progress_bonus": 0.0, "description": "A plush couch that lets you rest more deeply at the end of the day."},
+                        {"id": "nice_dining_table", "name": "Mahogany Dining Table", "cost": 600.0, "energy_recovery_bonus": 0.0, "romance_progress_bonus": 0.15, "description": "Perfect for hosting candlelit dinners at home to deepen relationships."},
+                        {"id": "indoor_garden", "name": "Indoor Greenery", "cost": 800.0, "energy_recovery_bonus": 5.0, "romance_progress_bonus": 0.10, "description": "Lush houseplants that bring serenity to your living room."},
+                        {"id": "gourmet_kitchen", "name": "Gourmet Home Kitchen", "cost": 2500.0, "energy_recovery_bonus": 15.0, "romance_progress_bonus": 0.0, "description": "A custom home kitchen setup. Adds a +20% romance speed boost on all home-held dates."},
+                        {"id": "backyard_greenhouse", "name": "Luxury Backyard Greenhouse", "cost": 3500.0, "energy_recovery_bonus": 0.0, "romance_progress_bonus": 0.20, "description": "Lowers overnight stress level by 15%."},
+                        {"id": "study_library", "name": "Home Study Library", "cost": 3000.0, "energy_recovery_bonus": 0.0, "romance_progress_bonus": 0.20, "description": "A quiet room filled with books and research archives, providing a +20% romance speed boost."},
+                        {"id": "private_office", "name": "Private Office & Vault", "cost": 4000.0, "energy_recovery_bonus": 0.0, "romance_progress_bonus": 0.20, "description": "An executive office setup for administrative and financial strategy, providing a +20% romance speed boost."}
+                    ]
+                },
+                "house_purchase": {
+                    "cost": 3500.0,
+                    "daily_maintenance": 20.0,
+                    "description": "A charming cottage on the edge of town, symbol of a stable personal life."
+                },
+                "loans": {
+                    "max_loan_ratio": 0.5,
+                    "annual_interest_rate": 0.15,
+                    "minimum_payment_percentage": 0.05
+                },
+                "romance": {
+                    "date_cost": 100.0,
+                    "romance_level_milestones": [20, 40, 60, 80, 100],
+                    "relationship_stages": ["Strangers", "Getting to know each other", "Comfortable", "Close", "Deeply Connected"],
+                    "energy_cost_for_date": 25.0
+                },
+                "competitor": {
+                    "name": "Bistro Gourmet",
+                    "owner": "Chef Sebastian",
+                    "base_marketing_budget": 50.0,
+                    "base_market_share_drain": 0.15,
+                    "marketing_counteraction_cost": 40.0,
+                    "reputation_impact_factor": 0.2
+                }
             }
 
     @property
@@ -187,9 +278,7 @@ class GameState:
         
         if open_hours > 0:
             hourly_rate = (capacity / 8.0) * attraction * multiplier
-            potential_customers = int(hourly_rate * open_hours * random_factor)
-            if potential_customers < 1 and attraction > 0:
-                potential_customers = 1
+            potential_customers = max(1, round(hourly_rate * open_hours * random_factor))
         else:
             potential_customers = 0
             
@@ -282,8 +371,8 @@ class GameState:
         # 9. Reputation adjustments (reverted to old rate)
         rep_change = 0.0
         if actual_served > 0:
-            # Good service skill increases rep
-            rep_change += 0.03 * actual_served * (avg_skill - 0.4)
+            # Good service skill increases rep (increased to give organic loop feedback)
+            rep_change += 0.5 * actual_served * (avg_skill - 0.3)
             
             # Pricing impact
             max_p = self.restaurant.price_per_meal_range[1]
@@ -401,13 +490,12 @@ class GameState:
         # Rep adjustments
         rep_change = hourly_rep_gain
         if actual_served > 0:
-            rep_change += 0.03 * actual_served * (avg_skill - 0.4)
-            rep_change += 0.004 * actual_served * (avg_skill - 0.4)
+            rep_change += 0.5 * actual_served * (avg_skill - 0.3)
             
             max_p = self.restaurant.price_per_meal_range[1]
             if self.restaurant.menu_price > max_p:
                 overprice = self.restaurant.menu_price - max_p
-                rep_change -= 0.08 * overprice * actual_served
+                rep_change -= 0.6 * overprice * actual_served
         
         if turned_away > 0:
             rep_change -= 0.015 * turned_away

@@ -111,7 +111,7 @@ def test_workday_simulation_controls(main_window):
     assert main_window.is_working is False
     assert main_window.is_paused is False
     assert main_window.evening_phase is True
-    assert main_window.sim_btn.text() == "Sleep & End Day"
+    assert main_window.sim_btn.text() == "Sleep && End Day"
     assert main_window.stop_btn.isHidden()
     assert main_window.day_clock_timer.isActive() is False
     

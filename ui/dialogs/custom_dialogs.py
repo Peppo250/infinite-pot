@@ -140,7 +140,7 @@ class PriceSliderDialog(GameDialog):
         
         # Color warning if pricing is excessively above max
         if price > self.max_p:
-            self.price_display.setStyleSheet("font-size: 24px; font-weight: bold; color: #E25E3E;")
+            self.price_display.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {ThemeManager.ORANGE_ALERT};")
         else:
             self.price_display.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {ThemeManager.DARK_BROWN};")
 
@@ -663,7 +663,7 @@ class RelationshipMgmtDialog(GameDialog):
         
         self.progress = QProgressBar(self)
         self.progress.setRange(0, 100)
-        self.progress.setStyleSheet("QProgressBar::chunk { background-color: #E25E3E; }")
+        self.progress.setStyleSheet(f"QProgressBar::chunk {{ background-color: {ThemeManager.ORANGE_ALERT}; }}")
         self.layout.addWidget(self.progress)
         
         # Activities list
@@ -783,7 +783,7 @@ class RelationshipMgmtDialog(GameDialog):
             
         # Propose / Ring / Breakup buttons section
         pf = QFrame(self.scroll_content)
-        pf.setStyleSheet("border: 1px solid #E25E3E; padding: 5px; border-radius: 4px;")
+        pf.setStyleSheet(f"border: 1px solid {ThemeManager.ORANGE_ALERT}; padding: 5px; border-radius: 4px;")
         pl = QVBoxLayout(pf)
         pl.addWidget(QLabel("<b>Relationship Actions & Proposals:</b>", self))
         
@@ -1259,15 +1259,15 @@ class JournalDialog(GameDialog):
                 fl.setSpacing(2)
                 
                 cat_colors = {
-                    "Date": "#4E9F3D",
-                    "Milestone": "#1F4068",
-                    "Difficult": "#E25E3E",
-                    "Everyday": "#8D6240"
+                    "Date": ThemeManager.GREEN_SUCCESS,
+                    "Milestone": ThemeManager.DEEP_BLUE,
+                    "Difficult": ThemeManager.ORANGE_ALERT,
+                    "Everyday": ThemeManager.SOFT_BROWN
                 }
                 color = cat_colors.get(mem.category, "#555555")
                 
                 lbl_hdr = QLabel(f"<b>{mem.title}</b> <font size='2' color='{color}'>[{mem.category}]</font>", self)
-                lbl_hdr.setStyleSheet("font-size: 13px; color: #1F1717; background: transparent; border: none;")
+                lbl_hdr.setStyleSheet(f"font-size: 13px; color: {ThemeManager.DARK_OUTLINE}; background: transparent; border: none;")
                 fl.addWidget(lbl_hdr)
                 
                 lbl_desc = QLabel(f"Emotion: <b>{mem.emotion}</b> | Age: {mem.age} days ago | Strength: {mem.strength:.1f}/10.0", self)

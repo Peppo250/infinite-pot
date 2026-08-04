@@ -203,9 +203,15 @@ class RomanceSystem:
     has_ring: bool = False
     wedding_tier: str = "None"
     caught_cheating: bool = False
+    date_cost: float = 100.0
+    energy_cost_for_date: float = 25.0
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> "RomanceSystem":
+        r_cfg = config.get("romance", {})
+        d_cost = r_cfg.get("date_cost", 80.0)
+        e_cost = r_cfg.get("energy_cost_for_date", 25.0)
+        
         names_artist = ["Clara", "Maya", "Elena", "Sophie", "Chloe"]
         names_scholar = ["Sarah", "Ada", "Grace", "Evelyn", "Zoe"]
         names_entrepreneur = ["Victoria", "Roxanne", "Samantha", "Iris", "Diana"]
@@ -241,7 +247,15 @@ class RomanceSystem:
             life_goals=["Scale to Town Restaurant", "Employ helper staff", "Outperform Bistro Gourmet"]
         )
         
-        return cls(characters=[c1, c2, c3], active_partner_name=None, has_ring=False, wedding_tier="None", caught_cheating=False)
+        return cls(
+            characters=[c1, c2, c3],
+            active_partner_name=None,
+            has_ring=False,
+            wedding_tier="None",
+            caught_cheating=False,
+            date_cost=d_cost,
+            energy_cost_for_date=e_cost
+        )
 
     @property
     def partner(self) -> RomanticCharacter | None:
@@ -504,8 +518,8 @@ class RomanceSystem:
         if not p:
             return False, "You do not have an active partner to go on a date with!", 0.0, 0.0
             
-        date_cost = 80.0
-        energy_cost_for_date = 25.0
+        date_cost = self.date_cost
+        energy_cost_for_date = self.energy_cost_for_date
         
         if current_cash < date_cost:
             return False, f"Insufficient cash for a date! Need ${date_cost:.2f}.", 0.0, 0.0

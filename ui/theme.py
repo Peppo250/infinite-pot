@@ -16,6 +16,16 @@ class ThemeManager:
     RED_WARNING = "#C84B31"
     BLUE_INFO = "#6B85C1"
     
+    # Centralized Extended Colors
+    DARK_OUTLINE = "#1F1717"
+    ORANGE_ALERT = "#E25E3E"
+    MINT_GREEN = "#8ADAB2"
+    DEEP_BLUE = "#1F4068"
+    LIGHT_MINT = "#D2E9E9"
+    SOFT_BROWN = "#8D6240"
+    DARK_WOOD = "#3E2723"
+    TAVERN_GLASS_BG = "rgba(245, 235, 224, 0.6)"
+    
     FONT_FAMILY = "VT323"          # Primary retro dialog font
     HEADER_FONT = "Press Start 2P" # Classic blocky header font
     

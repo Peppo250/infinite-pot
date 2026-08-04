@@ -34,17 +34,17 @@ class BusinessMenuScreen(QWidget):
         # TAB 1: Upgrades & Pricing
         self.upgrades_tab = QWidget()
         self.init_upgrades_tab()
-        self.tabs.addTab(self.upgrades_tab, "Upgrades & Pricing")
+        self.tabs.addTab(self.upgrades_tab, "Upgrades && Pricing")
         
         # TAB 2: Staffing
         self.staff_tab = QWidget()
         self.init_staff_tab()
-        self.tabs.addTab(self.staff_tab, "Staff & Payroll")
+        self.tabs.addTab(self.staff_tab, "Staff && Payroll")
         
         # TAB 3: Loans
         self.loans_tab = QWidget()
         self.init_loans_tab()
-        self.tabs.addTab(self.loans_tab, "Bank & Loans")
+        self.tabs.addTab(self.loans_tab, "Bank && Loans")
         
         # TAB 4: Marketing (Competitor)
         self.marketing_tab = QWidget()
@@ -90,6 +90,21 @@ class BusinessMenuScreen(QWidget):
         lvl_layout.addWidget(self.upgrade_lvl_btn, alignment=Qt.AlignRight)
         
         layout.addWidget(lvl_card)
+        
+        # House Purchase Row
+        house_card = QFrame(self)
+        house_card.setObjectName("card-frame")
+        house_layout = QHBoxLayout(house_card)
+        
+        self.house_lbl = QLabel("House Status: Cottage Locked", self)
+        self.house_lbl.setStyleSheet("font-weight: bold;")
+        house_layout.addWidget(self.house_lbl)
+        
+        self.house_btn = QPushButton("Purchase Cottage", self)
+        self.house_btn.clicked.connect(self.on_purchase_house)
+        house_layout.addWidget(self.house_btn, alignment=Qt.AlignRight)
+        
+        layout.addWidget(house_card)
         
         # Scroll Area for Business Upgrades
         scroll = QScrollArea(self)
@@ -201,6 +216,26 @@ class BusinessMenuScreen(QWidget):
                 p.adjust_cash(-cost)
                 self.state.finance.record_transaction("Upgrade", cost, f"Upgraded to Level {next_lvl}")
                 UIAudio.play_success()
+                self.update_ui()
+                self.state_changed.emit()
+
+    def on_purchase_house(self):
+        p = self.state.player
+        h = self.state.house
+        cost = h.cost
+        if p.cash >= cost:
+            dlg = ConfirmDialog(
+                "Purchase Cozy Cottage",
+                f"Are you sure you want to purchase the cottage for your new life?\n\nCost: ${cost:.2f}",
+                self
+            )
+            if dlg.exec():
+                p.adjust_cash(-cost)
+                h.purchased = True
+                p.has_house = True
+                self.state.finance.record_transaction("Upgrade", cost, "Purchased cottage")
+                UIAudio.play_success()
+                ConfirmDialog("Success", "Congratulations! You purchased a cozy cottage. Home navigation is now unlocked!", self).exec()
                 self.update_ui()
                 self.state_changed.emit()
 
@@ -339,6 +374,23 @@ class BusinessMenuScreen(QWidget):
             self.lvl_lbl.setText(f"Current Tier: Level {r.level} - {r.current_config.name}\n(Maximum Level Reached!)")
             self.upgrade_lvl_btn.setEnabled(False)
             self.upgrade_lvl_btn.setText("Maximum Level")
+            
+        # Update house details
+        h = self.state.house
+        partner = self.state.romance.partner
+        if h.purchased:
+            self.house_lbl.setText("House Status: <b>Cozy Cottage Purchased</b> 🏡")
+            self.house_btn.setText("Cottage Purchased")
+            self.house_btn.setEnabled(False)
+        else:
+            if partner is None:
+                self.house_lbl.setText("House Status: <b>Locked</b> (Requires a romantic relationship first!)")
+                self.house_btn.setEnabled(False)
+                self.house_btn.setText("Purchase Cottage")
+            else:
+                self.house_lbl.setText("House Status: <b>Cottage Available</b> 🏡")
+                self.house_btn.setEnabled(p.cash >= h.cost)
+                self.house_btn.setText(f"Purchase Cottage (-${h.cost:.2f})")
             
         # Draw Scrollable Business Upgrades
         # First clear layout
